@@ -44,7 +44,7 @@ app.use('/api/v1', auth, (req, res, next) => {
 // ── Health (unauthenticated) ──────────────────────────────────────────────────
 app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 
-app.use((req, res) => res.status(404).json({ error: { code: 'NOT_FOUND', message: `${req.path} not found` } });
+app.use((req, res) => res.status(404).json({ error: { code: 'NOT_FOUND', message: `${req.path} not found` } }));
 app.use(errorHandler);
 
 // ── HTTP Server ───────────────────────────────────────────────────────────────
