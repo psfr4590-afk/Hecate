@@ -11,6 +11,7 @@
  */
 
 let db = null; // will be injected by index.js
+const engagementIntegrity = require('../../../core/db/engagement-integrity');
 
 const SCHEMA = `
   CREATE TABLE IF NOT EXISTS recon_jobs (
@@ -165,7 +166,6 @@ function saveSecrets(jobId, pageId, findings) {
     VALUES (?,?,?,?,?,?,?,?,?,?)
   `);
   const { randomUUID } = require('crypto');
-const engagementIntegrity = require('../../../core/db/engagement-integrity');
   for (const f of findings) {
     stmt.run(randomUUID(), jobId, pageId,
              f.type, f.conf, f.redacted,
@@ -186,7 +186,6 @@ function saveForms(jobId, pageId, forms) {
     VALUES (?,?,?,?,?,?)
   `);
   const { randomUUID } = require('crypto');
-const engagementIntegrity = require('../../../core/db/engagement-integrity');
   for (const f of forms) {
     stmt.run(randomUUID(), jobId, pageId,
              f.action ?? null, f.method ?? 'GET',
