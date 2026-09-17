@@ -69,13 +69,30 @@ function start(opts = {}) {
   });
 }
 
-function stop() {
-  return new Promise(resolve => {
-    eventBridge.stop();
-    wsServer.close();
-    if (!server) return resolve();
-    server.close(() => { server = null; resolve(); });
-    setTimeout(() => server?.closeAllConnections?.(), 5000).unref();
+/**
+ * Stop all application-owned transports in dependency order.
+ * WebSocket shutdown is awaited before the HTTP server is considered closed so
+ * upgraded sockets cannot keep the test/process lifecycle pending.
+ */
+async function stop() {
+  eventBridge.stop();
+  await wsServer.close();
+
+  const currentServer = server;
+  if (!currentServer) return;
+
+  await new Promise(resolve => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      server = null;
+      resolve();
+    };
+
+    currentServer.close(finish);
+    // Force-close active HTTP connections if a handler has failed to finish.
+    setTimeout(() => currentServer.closeAllConnections?.(), 5000).unref();
   });
 }
 
