@@ -6,7 +6,6 @@
  * Origin validation remains an additional browser boundary, not an authentication mechanism.
  */
 
-const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 const Engagement = require('../../core/db/models/engagement');
 const wsPolicy = require('./ws-policy');
@@ -100,6 +99,9 @@ function clientCount() { return clients.size; }
  *
  * Terminating tracked clients first makes shutdown deterministic. The HTTP
  * server remains owned by the caller and is intentionally not closed here.
+ *
+ * Returns a Promise so callers can await completion during deterministic
+ * application/test teardown.
  */
 function close() {
   if (pingTimer) {
@@ -110,7 +112,7 @@ function close() {
   const server = wss;
   if (!server) {
     clients.clear();
-    return;
+    return Promise.resolve();
   }
 
   // Detach the singleton before terminating sockets so a close/error callback
@@ -126,11 +128,14 @@ function close() {
   }
   clients.clear();
 
-  try {
-    server.close();
-  } catch {
-    // Already-closed WebSocketServer instances are safe to ignore.
-  }
+  return new Promise(resolve => {
+    try {
+      server.close(() => resolve());
+    } catch {
+      // Already-closed WebSocketServer instances are safe to ignore.
+      resolve();
+    }
+  });
 }
 
 module.exports = { attach, broadcast, clientCount, close, extractToken };
