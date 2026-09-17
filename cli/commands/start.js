@@ -6,6 +6,7 @@
  */
 
 const path        = require('path');
+const os          = require('os');
 const fs          = require('fs');
 const { Command } = require('commander');
 
@@ -21,17 +22,26 @@ const CredentialStore = require('../../core/store/credential-store');
 const ADGraph         = require('../../core/graph/ad-graph');
 
 // Modules
-const recon      = require('../../modules/recon');
-const evilProxy  = require('../../modules/evil-proxy');
-const c2         = require('../../modules/c2');
-const delivery   = require('../../modules/delivery');
-const mitm       = require('../../modules/mitm');
-const webapp     = require('../../modules/webapp');
+const recon       = require('../../modules/recon');
+const evilProxy   = require('../../modules/evil-proxy');
+const c2          = require('../../modules/c2');
+const delivery    = require('../../modules/delivery');
+const mitm        = require('../../modules/mitm');
+const webapp      = require('../../modules/webapp');
 const postExploit = require('../../modules/post-exploit');
 
 const DEFAULT_PORT    = 7331;
 const DEFAULT_HOST    = '127.0.0.1';
 const DEFAULT_DB_PATH = path.resolve(process.cwd(), 'data', 'hecate.db');
+
+function expandPath(value) {
+  const input = String(value);
+  if (input === '~') return os.homedir();
+  if (input.startsWith(`~${path.sep}`) || input.startsWith('~/')) {
+    return path.join(os.homedir(), input.slice(2));
+  }
+  return input;
+}
 
 const cmd = new Command('start');
 
@@ -44,13 +54,21 @@ cmd
   .option('--dry-run',           'Delivery module: do not send emails')
   .option('--log-level <level>', 'Log level',                          'info')
   .action(async (opts) => {
-    const port    = parseInt(opts.port, 10);
-    const host    = opts.host;
-    const dbPath  = path.resolve(opts.db);
+    const port    = Number.parseInt(opts.port, 10);
+    const host    = String(opts.host || DEFAULT_HOST).trim();
+    const dbPath  = path.resolve(expandPath(opts.db));
     const keyPath = opts.key ?? process.env.HECATE_KEY_PATH;
 
-    if (!keyPath)              fatal('No key path. Set HECATE_KEY_PATH or pass --key <path>');
-    if (!fs.existsSync(keyPath)) fatal(`Key file not found: ${keyPath}`);
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      fatal(`Invalid port: ${opts.port}. Port must be an integer from 1 to 65535.`);
+    }
+    if (!host) fatal('Host cannot be empty');
+    if (!process.env.HECATE_API_TOKEN) fatal('HECATE_API_TOKEN is required before starting HECATE');
+    if (!keyPath) fatal('No key path. Set HECATE_KEY_PATH or pass --key <path>');
+
+    const resolvedKeyPath = path.resolve(expandPath(keyPath));
+    if (!fs.existsSync(resolvedKeyPath)) fatal(`Key file not found: ${resolvedKeyPath}`);
+    if (!fs.statSync(resolvedKeyPath).isFile()) fatal(`Key path is not a file: ${resolvedKeyPath}`);
 
     // ── Database ──────────────────────────────────────────────────────────────
     log('info', 'Initialising database', { db: dbPath });
@@ -60,7 +78,7 @@ cmd
 
     // ── Encryption key ────────────────────────────────────────────────────────
     log('info', 'Loading encryption key');
-    try { await KeyManager.load(keyPath); }
+    try { await KeyManager.load(resolvedKeyPath); }
     catch (err) { fatal(`Key load failed: ${err.message}`); }
 
     const coreDeps = { db, KeyManager, eventBus, Evidence, Target, ADGraph };
@@ -101,7 +119,10 @@ cmd
     log('info', `API base — http://${host}:${port}/api/v1/`);
 
     // ── Signal handling ───────────────────────────────────────────────────────
+    let shuttingDown = false;
     async function shutdown(sig) {
+      if (shuttingDown) return;
+      shuttingDown = true;
       log('info', `${sig} — shutting down`);
       try {
         await server.stop();
@@ -111,7 +132,9 @@ cmd
         postExploit.shutdown?.();
         KeyManager.clear();
         Database.close();
-      } catch (err) { process.stderr.write(`Shutdown error: ${err.message}\n`); }
+      } catch (err) {
+        process.stderr.write(`Shutdown error: ${err.message}\n`);
+      }
       process.exit(0);
     }
 

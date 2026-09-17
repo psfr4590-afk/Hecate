@@ -10,11 +10,21 @@
  */
 
 const path        = require('path');
+const os          = require('os');
 const fs          = require('fs');
 const crypto      = require('crypto');
 const { Command } = require('commander');
 
-const DEFAULT_OUT = path.resolve(process.env.HOME ?? '.', '.hecate', 'operator.key');
+function expandPath(value) {
+  const input = String(value);
+  if (input === '~') return os.homedir();
+  if (input.startsWith(`~${path.sep}`) || input.startsWith('~/')) {
+    return path.join(os.homedir(), input.slice(2));
+  }
+  return input;
+}
+
+const DEFAULT_OUT = path.join(os.homedir(), '.hecate', 'operator.key');
 
 const cmd = new Command('keygen');
 
@@ -23,7 +33,7 @@ cmd
   .option('-o, --out <path>', 'Output path for the key file', DEFAULT_OUT)
   .option('--force',          'Overwrite an existing key file')
   .action((opts) => {
-    const outPath = path.resolve(opts.out);
+    const outPath = path.resolve(expandPath(opts.out));
     const outDir  = path.dirname(outPath);
 
     if (fs.existsSync(outPath) && !opts.force) {
@@ -37,9 +47,9 @@ cmd
 
     // AES-256 → 32 bytes
     const key = crypto.randomBytes(32);
-    fs.writeFileSync(outPath, key);
+    fs.writeFileSync(outPath, key, { mode: 0o400 });
 
-    // Restrict permissions — owner read-only (Unix)
+    // Restrict permissions — owner read-only (Unix). Windows may ignore chmod.
     try { fs.chmodSync(outPath, 0o400); } catch { /* Windows — skip */ }
 
     process.stdout.write(JSON.stringify({
