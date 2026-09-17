@@ -6,6 +6,7 @@
  * Origin validation remains an additional browser boundary, not an authentication mechanism.
  */
 
+const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 const Engagement = require('../../core/db/models/engagement');
 const wsPolicy = require('./ws-policy');
@@ -14,6 +15,27 @@ const PING_INTERVAL_MS = 30_000;
 let wss = null;
 let pingTimer = null;
 const clients = new Map(); // ws -> { id, ip, connectedAt, alive, operatorId }
+
+function safeEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string' || !a || !b) return false;
+  const aBuf = Buffer.from(a);
+  const bBuf = Buffer.from(b);
+  if (aBuf.length !== bBuf.length) return false;
+  return crypto.timingSafeEqual(aBuf, bBuf);
+}
+
+function extractToken(req) {
+  const authHeader = req?.headers?.authorization;
+  if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+    return authHeader.slice(7).trim();
+  }
+  const headerToken = req?.headers?.['x-hecate-token'];
+  return typeof headerToken === 'string' ? headerToken.trim() : '';
+}
+
+function nextId() {
+  return crypto.randomUUID();
+}
 
 function attach(httpServer, opts = {}) {
   if (wss) throw new Error('WebSocket server already attached');
