@@ -89,10 +89,48 @@ function broadcast(type, data) {
 
 function _send(ws, payload) { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(payload)); }
 function clientCount() { return clients.size; }
+
+/**
+ * Stop the WebSocket layer without leaving client sockets behind.
+ *
+ * WebSocketServer#close waits for connected clients to disappear. The old
+ * implementation called close() on the server but only cleared the bookkeeping
+ * map, so a connected test/client socket could leave the close callback pending
+ * indefinitely. That made the API test process hang during teardown.
+ *
+ * Terminating tracked clients first makes shutdown deterministic. The HTTP
+ * server remains owned by the caller and is intentionally not closed here.
+ */
 function close() {
-  if (pingTimer) { clearInterval(pingTimer); pingTimer = null; }
-  if (wss) { wss.close(); wss = null; }
+  if (pingTimer) {
+    clearInterval(pingTimer);
+    pingTimer = null;
+  }
+
+  const server = wss;
+  if (!server) {
+    clients.clear();
+    return;
+  }
+
+  // Detach the singleton before terminating sockets so a close/error callback
+  // cannot accidentally make the module look attached during shutdown.
+  wss = null;
+
+  for (const ws of clients.keys()) {
+    try {
+      ws.terminate();
+    } catch {
+      // A socket may already be closed; shutdown must remain idempotent.
+    }
+  }
   clients.clear();
+
+  try {
+    server.close();
+  } catch {
+    // Already-closed WebSocketServer instances are safe to ignore.
+  }
 }
 
 module.exports = { attach, broadcast, clientCount, close, extractToken };
