@@ -4,7 +4,7 @@ This is the supported first-run path for a clean machine. It deliberately keeps 
 
 ## 1. Install Node.js
 
-Install Node.js 22 or newer.
+Install Node.js **22.13.0 or newer**.
 
 Verify:
 
@@ -13,7 +13,7 @@ node --version
 npm --version
 ```
 
-HECATE uses the built-in `node:sqlite` API. The repository currently runs it with Node's `--experimental-sqlite` runtime flag, so the same flag is required for the CLI and test commands.
+HECATE uses the built-in `node:sqlite` API. The repository keeps the `--experimental-sqlite` flag in its start/test commands for compatibility with the supported Node runtime line.
 
 Verify the SQLite runtime before doing anything else:
 
@@ -164,7 +164,7 @@ The API and WebSocket layers are designed so test and application teardown can a
 
 ### `node:sqlite` cannot be loaded
 
-Check the Node version and run the SQLite verification command from step 1. HECATE requires a Node release that provides `node:sqlite`.
+Check the Node version and run the SQLite verification command from step 1. HECATE requires Node 22.13.0 or newer.
 
 ### `HECATE_API_TOKEN is required`
 
