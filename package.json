@@ -4,7 +4,7 @@
   "description": "Unified operator-grade red team platform",
   "private": true,
   "license": "UNLICENSED",
-  "engines": { "node": ">=22.0.0" },
+  "engines": { "node": ">=22.13.0" },
   "main": "api/server.js",
   "bin": { "hecate": "cli/index.js" },
   "scripts": {
