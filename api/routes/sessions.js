@@ -47,7 +47,8 @@ router.post('/:id/heartbeat', async (req, res, next) => {
   try {
     const row = SessionStore.findById(req.params.id);
     requireResource(req, row, 'Session');
-    const ok = SessionStore.heartbeatForEngagement(req.params.id, row.engagement_id);
+    const engagementId = row.engagement_id ?? row.engagementId;
+    const ok = SessionStore.heartbeatForEngagement(req.params.id, engagementId);
     if (!ok) throw new HecateError('HECATE_NOT_FOUND', 'Session not found');
     res.json({ ok: true, ts: new Date().toISOString() });
   } catch (err) { next(err); }
@@ -59,10 +60,11 @@ router.patch('/:id/status', async (req, res, next) => {
     if (!VALID_STATUSES.has(status)) throw new HecateError('HECATE_BAD_INPUT', `status must be one of: ${[...VALID_STATUSES].join(', ')}`);
     const row = SessionStore.findById(req.params.id);
     requireResource(req, row, 'Session');
-    if (status === 'inactive') SessionStore.setInactiveForEngagement(req.params.id, row.engagement_id);
-    else if (status === 'dead') SessionStore.setDeadForEngagement(req.params.id, row.engagement_id);
+    const engagementId = row.engagement_id ?? row.engagementId;
+    if (status === 'inactive') SessionStore.setInactiveForEngagement(req.params.id, engagementId);
+    else if (status === 'dead') SessionStore.setDeadForEngagement(req.params.id, engagementId);
     else throw new HecateError('HECATE_BAD_INPUT', 'Cannot manually set status to active');
-    res.json({ session: SessionStore.findByIdForEngagement(req.params.id, row.engagement_id) });
+    res.json({ session: SessionStore.findByIdForEngagement(req.params.id, engagementId) });
   } catch (err) { next(err); }
 });
 
@@ -70,8 +72,9 @@ router.patch('/:id/metadata', async (req, res, next) => {
   try {
     const row = SessionStore.findById(req.params.id);
     requireResource(req, row, 'Session');
-    SessionStore.updateMetadataForEngagement(req.params.id, row.engagement_id, req.body ?? {});
-    res.json({ session: SessionStore.findByIdForEngagement(req.params.id, row.engagement_id) });
+    const engagementId = row.engagement_id ?? row.engagementId;
+    SessionStore.updateMetadataForEngagement(req.params.id, engagementId, req.body ?? {});
+    res.json({ session: SessionStore.findByIdForEngagement(req.params.id, engagementId) });
   } catch (err) { next(err); }
 });
 
@@ -79,7 +82,8 @@ router.delete('/:id', async (req, res, next) => {
   try {
     const row = SessionStore.findById(req.params.id);
     requireResource(req, row, 'Session');
-    SessionStore.removeForEngagement(req.params.id, row.engagement_id);
+    const engagementId = row.engagement_id ?? row.engagementId;
+    SessionStore.removeForEngagement(req.params.id, engagementId);
     res.status(204).end();
   } catch (err) { next(err); }
 });
