@@ -79,7 +79,6 @@ function init(database, keyManager) {
   db.exec(SCHEMA);
   try { db.exec("ALTER TABLE c2_tasks ADD COLUMN priority INTEGER NOT NULL DEFAULT 0"); } catch {}
   engagementIntegrity.install(db, ['c2_listeners','c2_implants']);
-  engagementIntegrity.install(db, ['c2_listeners','c2_implants']);
 }
 
 // ── Implants ──────────────────────────────────────────────────────────────────
