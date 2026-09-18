@@ -27,10 +27,11 @@ function safeEqual(a, b) {
 function extractToken(req) {
   const authHeader = req?.headers?.authorization;
   if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
-    return authHeader.slice(7).trim();
+    return authHeader.slice(7).trim() || null;
   }
   const headerToken = req?.headers?.['x-hecate-token'];
-  return typeof headerToken === 'string' ? headerToken.trim() : '';
+  if (typeof headerToken === 'string') return headerToken.trim() || null;
+  return null;
 }
 
 function nextId() {
@@ -97,8 +98,6 @@ function attach(httpServer, opts = {}) {
 function broadcast(type, data) {
   if (!wss) return;
   const engagementId = wsPolicy.engagementIdFromData(data);
-  // Fail closed for engagement-sensitive namespaces. A missing engagement
-  // identity is not a safe reason to broadcast globally.
   if (!wsPolicy.shouldBroadcast(type, data)) return;
   const frame = JSON.stringify({ type, data, ts: new Date().toISOString() });
   for (const [ws, meta] of clients) {
@@ -111,20 +110,6 @@ function broadcast(type, data) {
 function _send(ws, payload) { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(payload)); }
 function clientCount() { return clients.size; }
 
-/**
- * Stop the WebSocket layer without leaving client sockets behind.
- *
- * WebSocketServer#close waits for connected clients to disappear. The old
- * implementation called close() on the server but only cleared the bookkeeping
- * map, so a connected test/client socket could leave the close callback pending
- * indefinitely. That made the API test process hang during teardown.
- *
- * Terminating tracked clients first makes shutdown deterministic. The HTTP
- * server remains owned by the caller and is intentionally not closed here.
- *
- * Returns a Promise so callers can await completion during deterministic
- * application/test teardown.
- */
 function close() {
   if (pingTimer) {
     clearInterval(pingTimer);
@@ -137,16 +122,10 @@ function close() {
     return Promise.resolve();
   }
 
-  // Detach the singleton before terminating sockets so a close/error callback
-  // cannot accidentally make the module look attached during shutdown.
   wss = null;
 
   for (const ws of clients.keys()) {
-    try {
-      ws.terminate();
-    } catch {
-      // A socket may already be closed; shutdown must remain idempotent.
-    }
+    try { ws.terminate(); } catch {}
   }
   clients.clear();
 
@@ -154,7 +133,6 @@ function close() {
     try {
       server.close(() => resolve());
     } catch {
-      // Already-closed WebSocketServer instances are safe to ignore.
       resolve();
     }
   });
