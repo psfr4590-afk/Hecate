@@ -120,39 +120,3 @@ HECATE now has a coherent single-operator authorization boundary, explicit engag
 
 Assessment state: hardened static-review baseline with durability/lifecycle remediation. No exploit validation performed.
 
-
-## Current application baseline
-
-This report is a historical record of the full-program static hardening pass. The application has since been organized around a local React operator console backed by the same HECATE process.
-
-The current runtime still uses the single-operator model described above. Startup initializes the SQLite database, loads the AES-256 operator key, initializes all seven modules, registers their API routers, and starts the local HTTP/WebSocket server.
-
-The current console exposes these primary workspaces:
-
-- Dashboard
-- Engagements
-- Targets
-- Findings
-- Evidence
-- Sessions
-- Audit Log
-
-The Dashboard reads live module registration from `/api/v1/status` and presents the seven registered modules:
-
-- Recon
-- Evil Proxy
-- C2
-- Delivery
-- MITM
-- WebApp
-- Post-Exploit
-
-Only Recon and Web Application Assessment currently have active launcher controls in the console. Recon supports scoped job start/cancel and a private/local-target option. WebApp supports scoped scan start/cancel and the same private/local-target option. The other module cards are navigable and report that they are registered, but their dedicated operator launch controls are not exposed in the present UI.
-
-The browser console does not store the API token. The local node issues a process-local HttpOnly, SameSite browser session cookie. Programmatic clients continue to use the configured API token through the Authorization bearer or X-Hecate-Token header.
-
-The current README is the application-facing source of truth for installation, runtime behavior, UI behavior, module exposure, API boundaries, and current testing commands. This audit remains the historical record of the hardening decisions and limitations identified during the full-program pass.
-
-## Validation record note
-
-The test totals in the Validation section are historical measurements from the remediation run and should not be interpreted as the current repository test count. The authoritative current test contract is the `scripts.test` configuration in `package.json`; run `npm install` followed by `npm test` to validate the current tree.
