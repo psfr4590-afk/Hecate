@@ -74,7 +74,7 @@ function ModuleControls({module,eid,data,selected,setSelected,onRefresh,onMessag
 }
 
 function Panel({title,children}){return <section className="panel module-console module-console--wide"><div className="panel-head"><div><span className="eyebrow">OPERATOR CONTROL</span><h2>{title}</h2></div></div>{children}</section>;}
-function Field({label,value,onChange,type='text',placeholder}){return <label className="module-field"><span>{label}</span><input type={type} value={value??''} placeholder={placeholder} onChange={e=>onChange(e.target.value)}/></label>;}
+function Field({label,name,value,onChange,type='text',placeholder}){return <label className="module-field"><span>{label}</span><input name={name} type={type} value={value??''} placeholder={placeholder} onChange={e=>onChange?.(e.target.value)}/></label>;}
 function JsonView({value}){return <pre className="module-json">{JSON.stringify(value??{},null,2)}</pre>;}
 function Select({label,value,onChange,options}){return <label className="module-field"><span>{label}</span><select value={value??''} onChange={e=>onChange(e.target.value)}>{options.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select></label>;}
 
