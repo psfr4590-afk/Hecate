@@ -11,7 +11,7 @@ Unified operator-grade red team platform. Local-first, zero backend costs, full 
 
 ```bash
 # 1. Install dependencies
-npm install
+npm ci
 
 # 2. Generate an AES-256 operator key (do this once)
 node cli/index.js keygen --out ~/.hecate/operator.key
@@ -109,7 +109,7 @@ node cli/index.js keygen [options]
 
 ## API authentication
 
-All `/api/v1/*` requests require:
+All operator `/api/v1/*` requests require:
 
 ```
 Authorization: Bearer <HECATE_API_TOKEN>
@@ -117,7 +117,7 @@ Authorization: Bearer <HECATE_API_TOKEN>
 X-Hecate-Token: <HECATE_API_TOKEN>
 ```
 
-The C2 beacon endpoint (`POST /c2/beacon`) uses per-implant AES-256 keys — no operator token required.
+The C2 beacon endpoint (`POST /c2/beacon`) uses per-implant AES-256 keys — no operator token required. Delivery tracking endpoints under `/api/v1/delivery/track/*` are intentionally public so recipients can trigger tracking without an operator token.
 
 ## Running tests
 
@@ -225,8 +225,8 @@ hecate/
 | `POST /delivery/campaigns`          | Create campaign              |
 | `POST /delivery/campaigns/:id/targets` | Add targets (CSV or JSON) |
 | `POST /delivery/campaigns/:id/state`| Start/pause/complete         |
-| `GET /delivery/track/open/:tid`     | Open-tracking pixel          |
-| `GET /delivery/track/click/:tid/:lid` | Click redirect             |
+| `GET /delivery/track/open/:tid`     | Public open-tracking pixel |
+| `GET /delivery/track/click/:tid/:lid` | Public click redirect       |
 
 ### MITM — `/api/v1/mitm/`
 
@@ -253,16 +253,6 @@ hecate/
 | `POST /post-exploit/pivot/paths` | Compute AD attack paths             |
 | `POST /post-exploit/dump`       | Queue secrets dump via C2 implant   |
 
-## Test coverage
+## Regression coverage
 
-| Suite            | Tests | Status |
-|------------------|-------|--------|
-| Core             |  49   | ✅     |
-| Recon            |  58   | ✅     |
-| Evil Proxy       |  60   | ✅     |
-| C2               |  49   | ✅     |
-| Delivery         |  44   | ✅     |
-| MITM             |  29   | ✅     |
-| Webapp           |  30   | ✅     |
-| Post-Exploit     |  25   | ✅     |
-| **Total**        | **357** | **✅** |
+The repository regression suite covers the core, API, WebSocket, browser-session, and all seven module suites. The test command also validates the UI capability surface and encoding checks. GitHub Actions runs the same regression suite on pushes and pull requests to `main`.
