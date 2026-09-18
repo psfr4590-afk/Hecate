@@ -23,7 +23,10 @@ const eventBridge      = require('./websocket/event-bridge');
 const app = express();
 const publicApiRouter = express.Router();
 app.set('trust proxy', 'loopback');
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({
+  limit: '10mb',
+  verify: (req, res, buf) => { req._hecateRawBody = Buffer.from(buf); },
+}));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 app.use(logger);
 app.use(rateLimit);
