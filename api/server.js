@@ -9,6 +9,8 @@
 
 const http    = require('http');
 const express = require('express');
+const path = require('path');
+const fs = require('fs');
 
 const auth             = require('./middleware/auth');
 const rateLimit        = require('./middleware/rate-limit');
@@ -41,8 +43,19 @@ app.use('/api/v1', auth, (req, res, next) => {
   next();
 }, apiRouter);
 
+// ── Operator console ─────────────────────────────────────────────────────────
+// Serve the built React console from the same local origin as the API.
+const uiDist = path.resolve(__dirname, '..', 'ui', 'dist');
+if (fs.existsSync(uiDist)) app.use(express.static(uiDist, { index: 'index.html' }));
+
 // ── Health (unauthenticated) ──────────────────────────────────────────────────
 app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
+
+app.get('/', (req, res, next) => {
+  const index = path.join(uiDist, 'index.html');
+  if (fs.existsSync(index)) return res.sendFile(index);
+  next();
+});
 
 app.use((req, res) => res.status(404).json({ error: { code: 'NOT_FOUND', message: `${req.path} not found` } }));
 app.use(errorHandler);
