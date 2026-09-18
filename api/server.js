@@ -37,7 +37,7 @@ app.post('/c2/beacon', (req, res) => {
 });
 
 // ── Local browser session logout ─────────────────────────────────────────────
-app.post('/api/session/logout', auth, (req, res) => {
+app.post('/api/v1/session/logout', auth, (req, res) => {
   res.setHeader('Set-Cookie', 'hecate_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0');
   res.status(204).end();
 });
