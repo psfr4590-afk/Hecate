@@ -71,6 +71,10 @@ app.use(errorHandler);
 // ── HTTP Server ───────────────────────────────────────────────────────────────
 let server = null;
 
+function registerPublicRoute(prefix, route) {
+  app.use(prefix, route);
+}
+
 function start(opts = {}) {
   const port = opts.port ?? parseInt(process.env.HECATE_PORT ?? '7331', 10);
   const host = opts.host ?? process.env.HECATE_HOST ?? '127.0.0.1';
@@ -121,4 +125,4 @@ function registerModule(name, moduleRouter) {
   apiRouter.registerModule(name, moduleRouter);
 }
 
-module.exports = { app, start, stop, registerModule };
+module.exports = { app, start, stop, registerModule, registerPublicRoute };
