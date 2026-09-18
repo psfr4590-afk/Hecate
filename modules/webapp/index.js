@@ -11,4 +11,4 @@ function init(deps = {}) {
   _initialised = true;
 }
 
-module.exports = { init, routes };
+module.exports = { init, shutdown: scanner.shutdown, routes };
