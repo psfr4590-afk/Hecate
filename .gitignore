@@ -21,3 +21,11 @@ operator.key
 Thumbs.db
 *.swp
 *.swo
+
+# Engagement/runtime data
+runtime/
+engagement-runtime/
+engagements/
+evidence/
+captures/
+private-reports/
