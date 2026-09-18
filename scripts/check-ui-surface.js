@@ -17,8 +17,8 @@ for (const phrase of ['CAPABILITY MAP','Full operator surface','moduleCapabiliti
   assert.ok(dashboard.includes(phrase), `dashboard capability surface missing: ${phrase}`);
 }
 
-for (const phrase of ['CAPABILITY SURFACE','API surface','capabilities','routes']) {
-  assert.ok(workspace.includes(phrase), `module capability inventory missing: ${phrase}`);
+for (const phrase of ['CAPABILITY SURFACE','CONTROL SURFACE','Operator controls','module-control-grid','api.']) {
+  assert.ok(workspace.includes(phrase), `module GUI control surface missing: ${phrase}`);
 }
 
 process.stdout.write('UI capability surface check passed.\n');
