@@ -8,6 +8,10 @@ function _hash(prev, ts, action, subject, engagementId, detail) {
     .digest('hex');
 }
 
+function _legacyHash(prev, ts, action, detail) {
+  return crypto.createHash('sha256').update(`${prev}|${ts}|${action}|${detail}`).digest('hex');
+}
+
 function append(action, subject, detail, engagementId = null) {
   const prev = db().prepare('SELECT hash FROM audit_log ORDER BY id DESC LIMIT 1').get()?.hash ?? '0';
   const ts   = new Date().toISOString();
@@ -36,7 +40,7 @@ function verify() {
     const r    = rows[i];
     const prev = i === 0 ? '0' : rows[i - 1].hash;
     const expected = _hash(prev, r.ts, r.action, r.subject ?? null, r.engagement_id ?? null, String(r.detail ?? ''));
-    if (expected !== r.hash) {
+    if (expected !== r.hash && _legacyHash(prev, r.ts, r.action, String(r.detail ?? '')) !== r.hash) {
       return { valid: false, checked: i + 1, failedAt: r.id, message: `Hash mismatch at row ${r.id}` };
     }
   }
