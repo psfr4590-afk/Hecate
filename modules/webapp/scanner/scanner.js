@@ -77,6 +77,10 @@ function cancelScan(scanId) {
 
 function listActive() { return [...activeScans.keys()]; }
 
+async function shutdown() {
+  for (const scanId of [...activeScans.keys()]) cancelScan(scanId);
+}
+
 // ── Scan runner ───────────────────────────────────────────────────────────────
 
 async function _runScan(scanId, targetUrl, config, cancel, engagementId) {
