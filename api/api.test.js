@@ -163,7 +163,7 @@ describe('Middleware: auth', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('Middleware: rate-limit', () => {
-  const { create } = require('./middleware/rate-limit');
+  const { create, clear } = require('./middleware/rate-limit');
   const express = require('express');
 
   let app, srv;
@@ -176,7 +176,12 @@ describe('Middleware: rate-limit', () => {
     srv = await startTestServer(app);
   });
 
-  after(() => srv.close());
+  after(() => { clear(); srv.close(); });
+
+  it('rejects invalid limiter configuration', () => {
+    assert.throws(() => create({ windowMs: 0 }), /windowMs/);
+    assert.throws(() => create({ max: 0 }), /max/);
+  });
 
   it('allows requests under the limit', async () => {
     const r1 = await request(srv, 'GET', '/hit', { token: '' });
