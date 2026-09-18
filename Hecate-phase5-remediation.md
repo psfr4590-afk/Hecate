@@ -49,33 +49,6 @@ Phase 5 added coverage for:
 
 The policy remains dependency-free so its tests can run independently of the full WebSocket dependency tree.
 
-## Current application relationship
-
-The fail-closed event policy remains part of the current HECATE WebSocket boundary.
-
-The current application is a local, single-operator platform. The React console is served from the same HECATE process and uses a process-local browser session. Programmatic API clients use the configured token headers.
-
-The current console exposes the following primary workspaces:
-
-- Dashboard
-- Engagements
-- Targets
-- Findings
-- Evidence
-- Sessions
-- Audit Log
-
-All seven HECATE modules are registered by the CLI startup sequence:
-
-- Recon
-- Evil Proxy
-- C2
-- Delivery
-- MITM
-- WebApp
-- Post-Exploit
-
-The console currently provides active launcher controls for Recon and WebApp. The remaining module cards are navigable but display a ready/registered workspace without a dedicated UI launcher.
 
 ## Explicitly not changed
 
