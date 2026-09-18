@@ -249,4 +249,4 @@ async function _fetch(url, config, extraHeaders = {}) {
 
 function _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-module.exports = { start, cancelScan, listActive, DEFAULT_CONFIG };
+module.exports = { start, cancelScan, listActive, shutdown, DEFAULT_CONFIG };
