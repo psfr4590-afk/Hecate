@@ -11,13 +11,13 @@ const configs={
 };
 
 const moduleInfo = {
-  recon: { title:'Reconnaissance', eyebrow:'MODULE · RECON', description:'Start a scoped reconnaissance job against a target in the active engagement.' },
-  webapp: { title:'Web Application Assessment', eyebrow:'MODULE · WEBAPP', description:'Start a web application scan against a target in the active engagement.' },
-  c2: { title:'C2', eyebrow:'MODULE · C2', description:'Module registered and ready. Operational controls remain behind their dedicated API surface.' },
-  delivery: { title:'Delivery', eyebrow:'MODULE · DELIVERY', description:'Module registered and ready. Operational controls remain behind their dedicated API surface.' },
-  'evil-proxy': { title:'Evil Proxy', eyebrow:'MODULE · EVIL-PROXY', description:'Module registered and ready. Operational controls remain behind their dedicated API surface.' },
-  mitm: { title:'MITM', eyebrow:'MODULE · MITM', description:'Module registered and ready. Operational controls remain behind their dedicated API surface.' },
-  'post-exploit': { title:'Post-Exploit', eyebrow:'MODULE · POST-EXPLOIT', description:'Module registered and ready. Operational controls remain behind their dedicated API surface.' },
+  recon: { title:'Reconnaissance', eyebrow:'MODULE · RECON', description:'Scoped reconnaissance and discovery against an authorized target.', capabilities:['Scoped web crawling','Page and asset discovery','Evidence and secret discovery','Job cancellation'], routes:['POST /recon/jobs','GET /recon/jobs/:id/pages','GET /recon/jobs/:id/secrets','DELETE /recon/jobs/:id'] },
+  webapp: { title:'Web Application Assessment', eyebrow:'MODULE · WEBAPP', description:'Target-scoped web application scanning and finding generation.', capabilities:['Web application scans','Finding generation','Target-scoped execution','Scan cancellation'], routes:['POST /webapp/scans','GET /webapp/scans/:id/findings','DELETE /webapp/scans/:id'] },
+  c2: { title:'C2', eyebrow:'MODULE · C2', description:'Implant registration, authenticated beacon handling, task queueing, and result collection.', capabilities:['Implant registration','Task queueing','Beacon handling','Task results'], routes:['POST /c2/implants','POST /c2/implants/:id/tasks','GET /c2/implants/:id/results','POST /c2/beacon'] },
+  delivery: { title:'Delivery', eyebrow:'MODULE · DELIVERY', description:'Campaign orchestration, target ingestion, state control, and delivery tracking.', capabilities:['Campaign management','Target import','Campaign state control','Open/click tracking'], routes:['POST /delivery/campaigns','POST /delivery/campaigns/:id/targets','POST /delivery/campaigns/:id/state','GET /delivery/track/*'] },
+  'evil-proxy': { title:'Evil Proxy', eyebrow:'MODULE · EVIL-PROXY', description:'Adversary-in-the-middle proxy workflows with lure and session management.', capabilities:['Phishing lures','Victim session tracking','Session export','Phishlet-backed proxying'], routes:['POST /evil-proxy/lures','GET /evil-proxy/sessions','GET /evil-proxy/sessions/:l/:v/export'] },
+  mitm: { title:'MITM', eyebrow:'MODULE · MITM', description:'Network interception controls, DNS rule management, and captured traffic records.', capabilities:['DNS rules','DNS service control','Intercepted traffic','Credential capture records'], routes:['POST /mitm/dns/rules','POST /mitm/dns/start','GET /mitm/exchanges','GET /mitm/credentials'] },
+  'post-exploit': { title:'Post-Exploit', eyebrow:'MODULE · POST-EXPLOIT', description:'Credential analysis and lateral-movement planning workflows tied to authorized engagements.', capabilities:['Hash ingestion','Kerberoast task queueing','AD attack-path planning','Secrets-dump task queueing'], routes:['POST /post-exploit/hashes','POST /post-exploit/kerberoast/queue','POST /post-exploit/pivot/paths','POST /post-exploit/dump'] },
 };
 
 export function Workspace({view,data,onNewEngagement}) {
@@ -33,7 +33,7 @@ export function Workspace({view,data,onNewEngagement}) {
 }
 
 function ModuleWorkspace({ module, data }) {
-  const info = moduleInfo[module] || { title: module, eyebrow: 'MODULE', description: 'Registered module.' };
+  const info = moduleInfo[module] || { title: module, eyebrow: 'MODULE', description: 'Registered module.', capabilities:['Registered API capability'], routes:[] };
   const targets = data.targets ?? [];
   const [targetId, setTargetId] = useState(targets[0]?.id ?? '');
   const [targetValue, setTargetValue] = useState(targets[0]?.value ?? '');
@@ -109,6 +109,11 @@ function ModuleWorkspace({ module, data }) {
 
   return <div className="page">
     <div className="page-intro"><div><span className="eyebrow">{info.eyebrow}</span><h1>{info.title}</h1><p>{info.description}</p></div><span className="module-ready-badge">READY</span></div>
+    <section className="panel capability-panel">
+      <div className="panel-head"><div><span className="eyebrow">CAPABILITY SURFACE</span><h2>What this module can do</h2></div><span className="module-console-state">{info.capabilities.length} CAPABILITIES</span></div>
+      <div className="capability-detail-grid">{info.capabilities.map(item=><div className="capability-detail" key={item}><span className="capability-icon">◇</span><div><strong>{item}</strong><small>Available in the module API</small></div></div>)}</div>
+      <details className="route-details"><summary>API surface</summary><div className="route-list">{info.routes.map(route=><code key={route}>{route}</code>)}</div></details>
+    </section>
     <section className="panel module-console">
       <div className="panel-head"><div><span className="eyebrow">OPERATOR CONTROL</span><h2>Run process</h2></div><span className="module-console-state">{running?.status?.toUpperCase() ?? 'IDLE'}</span></div>
       {module === 'recon' || module === 'webapp'
@@ -118,7 +123,7 @@ function ModuleWorkspace({ module, data }) {
             <label className="module-check"><input type="checkbox" checked={allowPrivateTargets} onChange={event=>setAllowPrivateTargets(event.target.checked)} /><span>Allow private/local target</span></label>
             <div className="module-actions"><button className="button button--silver" type="submit" disabled={!data.engagement?.id || !targetValue || running?.status==='running'}>{running?.status==='running' ? 'RUNNING…' : module==='recon' ? '▶ Start recon' : '▶ Start web scan'}</button>{running?.status==='running'&&<button className="button button--ghost" type="button" onClick={cancel}>Stop</button>}</div>
           </form>
-        : <div className="module-placeholder"><strong>{info.title} is ready.</strong><span>The dashboard surface is now clickable and opens this module workspace. Active launcher controls for this module are not exposed here yet.</span></div>}
+        : <div className="module-placeholder"><strong>{info.title} is surfaced without inventing UI controls.</strong><span>The capability inventory above shows the real module surface and API routes, making previously hidden functionality discoverable while preserving the existing execution boundary.</span></div>}
       {error&&<div className="form-error">{error}</div>}
       {message&&<div className="module-success" role="status">{message}</div>}
     </section>
