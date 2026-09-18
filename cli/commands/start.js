@@ -33,6 +33,25 @@ const DEFAULT_PORT    = 7331;
 const DEFAULT_HOST    = '127.0.0.1';
 const DEFAULT_DB_PATH = path.resolve(process.cwd(), 'data', 'hecate.db');
 
+function validateStartOptions(opts) {
+  const port = Number.parseInt(opts.port, 10);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error(`Invalid port: ${opts.port}. Expected an integer from 1 to 65535`);
+  }
+  if (typeof opts.host !== 'string' || !opts.host.trim()) {
+    throw new Error('Host must be a non-empty string');
+  }
+  const dbPath = path.resolve(opts.db);
+  const dbDir = path.dirname(dbPath);
+  try {
+    fs.mkdirSync(dbDir, { recursive: true });
+    fs.accessSync(dbDir, fs.constants.R_OK | fs.constants.W_OK);
+  } catch (err) {
+    throw new Error(`Database directory is not accessible: ${dbDir} (${err.message})`);
+  }
+  return { port, host: opts.host.trim(), dbPath };
+}
+
 const cmd = new Command('start');
 
 cmd
@@ -44,9 +63,10 @@ cmd
   .option('--dry-run',           'Delivery module: do not send emails')
   .option('--log-level <level>', 'Log level',                          'info')
   .action(async (opts) => {
-    const port    = parseInt(opts.port, 10);
-    const host    = opts.host;
-    const dbPath  = path.resolve(opts.db);
+    let validated;
+    try { validated = validateStartOptions(opts); }
+    catch (err) { fatal(err.message); }
+    const { port, host, dbPath } = validated;
     const keyPath = opts.key ?? process.env.HECATE_KEY_PATH;
 
     if (!keyPath)              fatal('No key path. Set HECATE_KEY_PATH or pass --key <path>');
@@ -133,3 +153,4 @@ function fatal(message) {
 }
 
 module.exports = cmd;
+module.exports.validateStartOptions = validateStartOptions;
