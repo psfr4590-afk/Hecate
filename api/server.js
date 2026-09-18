@@ -51,20 +51,19 @@ app.use('/api/v1', auth, (req, res, next) => {
 
 // ── Operator console ─────────────────────────────────────────────────────────
 // Serve the built React console from the same local origin as the API.
+// Mint the browser session before express.static() can terminate the index request.
 const uiDist = path.resolve(__dirname, '..', 'ui', 'dist');
+const uiIndex = path.join(uiDist, 'index.html');
+app.use((req, res, next) => {
+  if (req.path === '/' && fs.existsSync(uiIndex)) {
+    res.setHeader('Set-Cookie', auth.sessionSetCookieHeader());
+  }
+  next();
+});
 if (fs.existsSync(uiDist)) app.use(express.static(uiDist, { index: 'index.html' }));
 
 // ── Health (unauthenticated) ──────────────────────────────────────────────────
 app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
-
-app.get('/', (req, res, next) => {
-  const index = path.join(uiDist, 'index.html');
-  if (fs.existsSync(index)) {
-    res.setHeader('Set-Cookie', auth.sessionSetCookieHeader());
-    return res.sendFile(index);
-  }
-  next();
-});
 
 app.use((req, res) => res.status(404).json({ error: { code: 'NOT_FOUND', message: `${req.path} not found` } }));
 app.use(errorHandler);
