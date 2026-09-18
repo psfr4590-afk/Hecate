@@ -6,8 +6,9 @@ let _key = null;
 const ALG = 'aes-256-gcm';
 
 async function load(keyPath) {
-  _key = fs.readFileSync(keyPath);
-  if (_key.length !== 32) throw new Error(`Key must be 32 bytes, got ${_key.length}`);
+  const key = fs.readFileSync(keyPath);
+  if (key.length !== 32) throw new Error(`Key must be 32 bytes, got ${key.length}`);
+  _key = key;
 }
 
 async function encrypt(plaintext) {
