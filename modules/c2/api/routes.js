@@ -173,16 +173,24 @@ router.get('/tasks/:taskId/result', async (req, res, next) => {
 // ── Profiles ──────────────────────────────────────────────────────────────────
 
 // GET /c2/profiles
-router.get('/profiles', (req, res) => {
-  res.json({ profiles: profile.list(), defaults: profile.DEFAULT_PROFILE });
+router.get('/profiles', (req, res, next) => {
+  try {
+    const engagementId = req.query.eid;
+    if (!engagementId) throw new HecateError('HECATE_BAD_INPUT', 'eid required');
+    requireEngagement(req, engagementId);
+    res.json({ profiles: profile.list(engagementId), defaults: profile.DEFAULT_PROFILE });
+  } catch (err) { next(err); }
 });
 
 // POST /c2/profiles
 router.post('/profiles', (req, res, next) => {
   try {
-    const p = { ...profile.DEFAULT_PROFILE, ...(req.body ?? {}) };
+    const engagementId = req.body?.engagementId;
+    if (!engagementId) throw new HecateError('HECATE_BAD_INPUT', 'engagementId required');
+    requireEngagement(req, engagementId);
+    const p = { ...profile.DEFAULT_PROFILE, ...(req.body ?? {}), engagementId };
     profile.validate(p);
-    const created = profile.create(req.body);
+    const created = profile.create({ ...req.body, engagementId });
     res.status(201).json({ profile: created });
   } catch (err) {
     if (err.message && !err.code) {
