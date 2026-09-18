@@ -122,21 +122,30 @@ router.delete('/campaigns/:id', (req, res, next) => {
 
 router.get('/smtp', (req, res, next) => {
   try {
-    res.json({ profiles: mailer.listProfiles() });
+    const engagementId = req.query.eid;
+    if (!engagementId) throw new HecateError('HECATE_BAD_INPUT', 'eid required');
+    requireEngagement(req, engagementId);
+    res.json({ profiles: mailer.listProfiles(engagementId) });
   } catch (err) { next(err); }
 });
 
 router.post('/smtp', (req, res, next) => {
   try {
-    const { id, host, port, secure, user, pass, rejectUnauthorized } = req.body ?? {};
+    const { engagementId, id, host, port, secure, user, pass, rejectUnauthorized } = req.body ?? {};
+    if (!engagementId) throw new HecateError('HECATE_BAD_INPUT', 'engagementId required');
+    requireEngagement(req, engagementId);
     if (!id || !host) throw new HecateError('HECATE_BAD_INPUT', 'id and host required');
-    mailer.addProfile({ id, host, port, secure, user, pass, rejectUnauthorized });
-    res.status(201).json({ profile: mailer.getProfile(id) });
+    mailer.addProfile({ engagementId, id, host, port, secure, user, pass, rejectUnauthorized });
+    res.status(201).json({ profile: mailer.getProfile(id, engagementId) });
   } catch (err) { next(err); }
 });
 
 router.delete('/smtp/:id', (req, res, next) => {
   try {
+    const engagementId = req.query.eid;
+    if (!engagementId) throw new HecateError('HECATE_BAD_INPUT', 'eid required');
+    requireEngagement(req, engagementId);
+    if (!mailer.getProfile(req.params.id, engagementId)) throw new HecateError('HECATE_NOT_FOUND', 'SMTP profile not found');
     mailer.removeProfile(req.params.id);
     res.status(204).end();
   } catch (err) { next(err); }
