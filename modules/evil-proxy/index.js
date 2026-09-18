@@ -47,6 +47,7 @@ function init(deps = {}) {
 
 function shutdown() {
   sessionMonitor.stopCleanup();
+  _initialised = false;
 }
 
 module.exports = {
