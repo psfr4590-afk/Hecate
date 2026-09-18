@@ -28,6 +28,9 @@ Database.init({ path: DB_PATH });
 
 const Engagement = require('../core/db/models/engagement');
 const Target = require('../core/db/models/target');
+const SessionStore = require('../core/store/session-store');
+const Evidence = require('../core/db/models/evidence');
+const Finding = require('../core/db/models/finding');
 
 const express = require('express');
 const auth = require('./middleware/auth');
@@ -97,6 +100,9 @@ describe('Phase 1: engagement authorization', () => {
   let sessionA;
   let evidenceA;
   let findingA;
+  let sessionB;
+  let evidenceB;
+  let findingB;
 
   it('creates the HTTP operator engagement and a foreign engagement at the model boundary', async () => {
     let r = await request('POST', '/engagements', { name: 'A' });
@@ -177,14 +183,34 @@ describe('Phase 1: engagement authorization', () => {
     });
     assert.equal(r.status, 201);
     findingA = r.body.finding.id;
+
+    // Foreign resources are created directly at the model boundary so the
+    // HTTP principal remains the configured operator-a.
+    sessionB = SessionStore.create({
+      engagementId: engagementB,
+      module: 'recon',
+      targetId: targetB,
+    });
+    evidenceB = Evidence.create({
+      engagementId: engagementB,
+      type: 'recon:url',
+      module: 'recon',
+      targetId: targetB,
+    });
+    findingB = Finding.create({
+      engagementId: engagementB,
+      title: 'Foreign finding',
+      severity: 'low',
+      targetId: targetB,
+    });
   });
 
-  it('denies cross-engagement access to target/session/evidence/finding IDs', async () => {
+  it('denies cross-engagement access to foreign target/session/evidence/finding IDs', async () => {
     for (const url of [
-      `/targets/${targetA}`,
-      `/sessions/${sessionA}`,
-      `/evidence/${evidenceA}`,
-      `/findings/${findingA}`,
+      `/targets/${targetB}`,
+      `/sessions/${sessionB}`,
+      `/evidence/${evidenceB}`,
+      `/findings/${findingB}`,
     ]) {
       const r = await request('GET', url);
       assert.equal(r.status, 403, url);
