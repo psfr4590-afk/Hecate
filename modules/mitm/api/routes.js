@@ -106,7 +106,8 @@ router.get('/dns/rules', (req, res, next) => {
 router.post('/dns/rules', (req, res, next) => {
   try {
     const { hostname, spoofIp, sessionId } = req.body ?? {};
-    if (sessionId) requireResource(req, mitmStore.getSession(sessionId), 'MITM session');
+    if (!sessionId) throw new HecateError('HECATE_BAD_INPUT', 'sessionId required');
+    requireResource(req, mitmStore.getSession(sessionId), 'MITM session');
     if (!hostname || !spoofIp) {
       throw new HecateError('HECATE_BAD_INPUT', 'hostname and spoofIp required');
     }
@@ -115,13 +116,16 @@ router.post('/dns/rules', (req, res, next) => {
       throw new HecateError('HECATE_BAD_INPUT', `Invalid IPv4 address: ${spoofIp}`);
     }
     dnsSpoofer.addEntry(hostname, spoofIp);
-    mitmStore.saveDnsRule(sessionId ?? null, hostname, spoofIp);
+    mitmStore.saveDnsRule(sessionId, hostname, spoofIp);
     res.status(201).json({ hostname, spoofIp });
   } catch (err) { next(err); }
 });
 
 router.delete('/dns/rules/:hostname', (req, res, next) => {
   try {
+    const sessionId = req.query.session;
+    if (!sessionId) throw new HecateError('HECATE_BAD_INPUT', 'session query parameter required');
+    requireResource(req, mitmStore.getSession(sessionId), 'MITM session');
     dnsSpoofer.removeEntry(req.params.hostname);
     mitmStore.removeDnsRule(req.params.hostname);
     res.status(204).end();
