@@ -27,7 +27,8 @@
     "test:webapp": "node --test modules/webapp/webapp.test.js",
     "test:post-exploit": "node --test modules/post-exploit/post-exploit.test.js",
     "build:ui": "vite build --config ui/vite.config.js",
-    "dev:ui": "vite --config ui/vite.config.js"
+    "dev:ui": "vite --config ui/vite.config.js",
+    "test:e2e:juice-shop": "node scripts/e2e-juice-shop.js"
   },
   "dependencies": {
     "commander": "^12.1.0",
