@@ -126,12 +126,14 @@ function _saveFindings(exchangeId, sessionId, host, url, sniffResult) {
   }
 }
 
-function listExchanges({ sessionId, host, hasCredentials, limit = 100 }) {
-  let sql  = `SELECT * FROM mitm_exchanges WHERE 1=1`;
-  const args = [];
-  if (sessionId)      { sql += ` AND session_id=?`;   args.push(sessionId); }
-  if (host)           { sql += ` AND host=?`;          args.push(host); }
-  if (hasCredentials) { sql += ` AND has_creds=1`; }
+function listExchanges({ sessionId, engagementId, host, hasCredentials, limit = 100 }) {
+  let sql = engagementId
+    ? `SELECT e.* FROM mitm_exchanges e JOIN mitm_sessions s ON s.id=e.session_id WHERE s.engagement_id=?`
+    : `SELECT e.* FROM mitm_exchanges e WHERE 1=1`;
+  const args = engagementId ? [engagementId] : [];
+  if (sessionId)      { sql += ` AND e.session_id=?`;   args.push(sessionId); }
+  if (host)           { sql += ` AND e.host=?`;          args.push(host); }
+  if (hasCredentials) { sql += ` AND e.has_creds=1`; }
   sql += ` ORDER BY logged_at DESC LIMIT ?`;
   args.push(limit);
   return db.prepare(sql).all(...args).map(r => ({
@@ -142,10 +144,14 @@ function listExchanges({ sessionId, host, hasCredentials, limit = 100 }) {
   }));
 }
 
-function listCredentials(sessionId) {
-  return sessionId
-    ? db.prepare(`SELECT * FROM mitm_credentials WHERE session_id=? ORDER BY found_at DESC`).all(sessionId)
-    : db.prepare(`SELECT * FROM mitm_credentials ORDER BY found_at DESC`).all();
+function listCredentials(sessionId, engagementId) {
+  if (sessionId) {
+    return engagementId
+      ? db.prepare(`SELECT c.* FROM mitm_credentials c JOIN mitm_sessions s ON s.id=c.session_id WHERE c.session_id=? AND s.engagement_id=? ORDER BY c.found_at DESC`).all(sessionId, engagementId)
+      : db.prepare(`SELECT * FROM mitm_credentials WHERE session_id=? ORDER BY found_at DESC`).all(sessionId);
+  }
+  if (engagementId) return db.prepare(`SELECT c.* FROM mitm_credentials c JOIN mitm_sessions s ON s.id=c.session_id WHERE s.engagement_id=? ORDER BY c.found_at DESC`).all(engagementId);
+  return db.prepare(`SELECT * FROM mitm_credentials ORDER BY found_at DESC`).all();
 }
 
 // ── DNS rules ─────────────────────────────────────────────────────────────────
@@ -162,26 +168,27 @@ function incrementDnsHit(hostname) {
   db.prepare(`UPDATE mitm_dns_rules SET hit_count=hit_count+1 WHERE hostname=?`).run(hostname.toLowerCase());
 }
 
-function listDnsRules(sessionId) {
-  return sessionId
-    ? db.prepare(`SELECT * FROM mitm_dns_rules WHERE session_id=? ORDER BY created_at DESC`).all(sessionId)
-    : db.prepare(`SELECT * FROM mitm_dns_rules ORDER BY created_at DESC`).all();
+function listDnsRules(sessionId, engagementId) {
+  if (sessionId) {
+    return engagementId
+      ? db.prepare(`SELECT r.* FROM mitm_dns_rules r JOIN mitm_sessions s ON s.id=r.session_id WHERE r.session_id=? AND s.engagement_id=? ORDER BY r.created_at DESC`).all(sessionId, engagementId)
+      : db.prepare(`SELECT * FROM mitm_dns_rules WHERE session_id=? ORDER BY created_at DESC`).all(sessionId);
+  }
+  if (engagementId) return db.prepare(`SELECT r.* FROM mitm_dns_rules r JOIN mitm_sessions s ON s.id=r.session_id WHERE s.engagement_id=? ORDER BY r.created_at DESC`).all(engagementId);
+  return db.prepare(`SELECT * FROM mitm_dns_rules ORDER BY created_at DESC`).all();
 }
 
 function removeDnsRule(hostname) {
   db.prepare(`DELETE FROM mitm_dns_rules WHERE hostname=?`).run(hostname.toLowerCase());
 }
 
-function stats(sessionId) {
-  const exchanges = sessionId
-    ? db.prepare('SELECT COUNT(*) as n FROM mitm_exchanges WHERE session_id=?').get(sessionId)?.n ?? 0
-    : db.prepare('SELECT COUNT(*) as n FROM mitm_exchanges').get()?.n ?? 0;
-  const credentials = sessionId
-    ? db.prepare('SELECT COUNT(*) as n FROM mitm_credentials WHERE session_id=?').get(sessionId)?.n ?? 0
-    : db.prepare('SELECT COUNT(*) as n FROM mitm_credentials').get()?.n ?? 0;
-  const dnsHits = sessionId
-    ? db.prepare('SELECT COALESCE(SUM(hit_count),0) as n FROM mitm_dns_rules WHERE session_id=?').get(sessionId)?.n ?? 0
-    : db.prepare('SELECT COALESCE(SUM(hit_count),0) as n FROM mitm_dns_rules').get()?.n ?? 0;
+function stats(sessionId, engagementId) {
+  const scope = engagementId
+    ? { exchange: ['SELECT COUNT(*) as n FROM mitm_exchanges e JOIN mitm_sessions s ON s.id=e.session_id WHERE s.engagement_id=?', engagementId], credential: ['SELECT COUNT(*) as n FROM mitm_credentials c JOIN mitm_sessions s ON s.id=c.session_id WHERE s.engagement_id=?', engagementId], dns: ['SELECT COALESCE(SUM(r.hit_count),0) as n FROM mitm_dns_rules r JOIN mitm_sessions s ON s.id=r.session_id WHERE s.engagement_id=?', engagementId] }
+    : { exchange: ['SELECT COUNT(*) as n FROM mitm_exchanges WHERE session_id=?', sessionId], credential: ['SELECT COUNT(*) as n FROM mitm_credentials WHERE session_id=?', sessionId], dns: ['SELECT COALESCE(SUM(hit_count),0) as n FROM mitm_dns_rules WHERE session_id=?', sessionId] };
+  const exchanges = db.prepare(scope.exchange[0]).get(scope.exchange[1])?.n ?? 0;
+  const credentials = db.prepare(scope.credential[0]).get(scope.credential[1])?.n ?? 0;
+  const dnsHits = db.prepare(scope.dns[0]).get(scope.dns[1])?.n ?? 0;
   return { exchanges, credentials, dnsHits };
 }
 
