@@ -131,6 +131,7 @@ function _scheduleAll(campaign) {
 
     sendQueue.enqueue({
       campaignId:   campaign.id,
+      engagementId:  campaign.engagementId,
       trackingId:   target.trackingId,
       to:           target.email,
       fromName:     campaign.fromName,
