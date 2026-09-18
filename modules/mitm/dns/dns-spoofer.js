@@ -209,10 +209,8 @@ async function _forward(rawQuery, rinfo) {
 
 function stop() {
   return new Promise(r => {
-    if (!server) return r();
-    server.close(r);
-    server = null;
-    _engagementId = null;
+    if (!server) { _engagementId = null; return r(); }
+    server.close(() => { server = null; _engagementId = null; r(); });
   });
 }
 
