@@ -23,9 +23,18 @@ let server     = null;
 let _upstream  = '8.8.8.8';
 let _port      = 53;
 let _eventBus  = null;
+let _engagementId = null;
 
 function setEventBus(b)  { _eventBus = b; }
 function setUpstream(ip) { _upstream = ip; }
+
+function setEngagement(engagementId) {
+  if (!engagementId) throw new Error('engagementId required');
+  if (_engagementId && _engagementId !== engagementId) {
+    throw new Error('MITM DNS spoofer is already owned by another engagement');
+  }
+  _engagementId = engagementId;
+}
 
 // ── Spoof map management ──────────────────────────────────────────────────────
 
@@ -138,6 +147,8 @@ function buildServfail(id) {
  * @returns {Promise<void>}
  */
 function start(opts = {}) {
+  if (opts.engagementId) setEngagement(opts.engagementId);
+  if (!opts.engagementId && _engagementId) throw new Error('engagementId required for owned DNS runtime');
   _port     = opts.port     ?? 53;
   _upstream = opts.upstream ?? '8.8.8.8';
 
@@ -201,13 +212,14 @@ function stop() {
     if (!server) return r();
     server.close(r);
     server = null;
+    _engagementId = null;
   });
 }
 
 function isRunning() { return server !== null; }
 
 module.exports = {
-  setEventBus, setUpstream,
+  setEventBus, setUpstream, setEngagement,
   addEntry, removeEntry, listEntries,
   parseQuery, buildAResponse, buildServfail,
   start, stop, isRunning,
