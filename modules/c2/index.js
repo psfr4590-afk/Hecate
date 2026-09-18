@@ -45,6 +45,8 @@ function init(deps = {}) {
 
 function shutdown() {
   if (_sweepTimer) { clearInterval(_sweepTimer); _sweepTimer = null; }
+  beaconHandler.clearReplayCache();
+  _initialised = false;
 }
 
 /**
