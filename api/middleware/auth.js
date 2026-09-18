@@ -13,6 +13,7 @@ const { operatorId } = require('../../core/auth/principal');
 const PUBLIC_ROUTES = new Set(['/health']);
 const EXPECTED_TOKEN = process.env.HECATE_API_TOKEN ?? '';
 const SESSION_COOKIE = 'hecate_session';
+const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 const SESSION_SECRET = crypto.randomBytes(32);
 
 if (!EXPECTED_TOKEN) {
@@ -37,8 +38,12 @@ function signSession(payload) {
   return crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('base64url');
 }
 
-function issueSessionCookie() {
-  const payload = crypto.randomBytes(32).toString('base64url');
+function issueSessionCookie(options = {}) {
+  const expiresAt = Number.isFinite(options.expiresAt) ? options.expiresAt : Date.now() + SESSION_TTL_MS;
+  const payload = Buffer.from(JSON.stringify({
+    nonce: crypto.randomBytes(32).toString('base64url'),
+    exp: expiresAt,
+  })).toString('base64url');
   return `${payload}.${signSession(payload)}`;
 }
 
@@ -59,7 +64,13 @@ function validSessionCookie(value) {
   if (dot <= 0) return false;
   const payload = value.slice(0, dot);
   const signature = value.slice(dot + 1);
-  return safeEqual(signature, signSession(payload));
+  if (!safeEqual(signature, signSession(payload))) return false;
+  try {
+    const parsed = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    return typeof parsed?.exp === 'number' && parsed.exp > Date.now();
+  } catch {
+    return false;
+  }
 }
 
 function hasLocalSession(req) {
@@ -67,7 +78,7 @@ function hasLocalSession(req) {
 }
 
 function sessionSetCookieHeader() {
-  return `${SESSION_COOKIE}=${issueSessionCookie()}; Path=/; HttpOnly; SameSite=Strict`;
+  return `${SESSION_COOKIE}=${issueSessionCookie()}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}`;
 }
 
 function auth(req, res, next) {
@@ -99,6 +110,7 @@ function auth(req, res, next) {
 
 module.exports = auth;
 module.exports.SESSION_COOKIE = SESSION_COOKIE;
+module.exports.SESSION_TTL_MS = SESSION_TTL_MS;
 module.exports.issueSessionCookie = issueSessionCookie;
 module.exports.sessionSetCookieHeader = sessionSetCookieHeader;
 module.exports.hasLocalSession = hasLocalSession;
