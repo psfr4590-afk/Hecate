@@ -33,6 +33,16 @@ const DEFAULT_PORT    = 7331;
 const DEFAULT_HOST    = '127.0.0.1';
 const DEFAULT_DB_PATH = path.resolve(process.cwd(), 'data', 'hecate.db');
 
+function validateRuntimeEnvironment() {
+  const major = Number.parseInt(process.versions.node.split('.')[0], 10);
+  if (!Number.isInteger(major) || major < 22) {
+    throw new Error(`Node.js ${process.versions.node} is unsupported. HECATE requires Node.js 22 or newer`);
+  }
+  if (typeof require('node:sqlite').DatabaseSync !== 'function') {
+    throw new Error('node:sqlite is unavailable. Start HECATE with --experimental-sqlite on Node 22/23 environments that require the flag');
+  }
+}
+
 function validateStartOptions(opts) {
   const port = Number.parseInt(opts.port, 10);
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
@@ -64,13 +74,21 @@ cmd
   .option('--log-level <level>', 'Log level',                          'info')
   .action(async (opts) => {
     let validated;
-    try { validated = validateStartOptions(opts); }
+    try {
+      validateRuntimeEnvironment();
+      validated = validateStartOptions(opts);
     catch (err) { fatal(err.message); }
     const { port, host, dbPath } = validated;
     const keyPath = opts.key ?? process.env.HECATE_KEY_PATH;
 
     if (!keyPath)              fatal('No key path. Set HECATE_KEY_PATH or pass --key <path>');
     if (!fs.existsSync(keyPath)) fatal(`Key file not found: ${keyPath}`);
+    if (process.platform !== 'win32') {
+      try {
+        const mode = fs.statSync(keyPath).mode & 0o777;
+        if ((mode & 0o077) !== 0) fatal(`Key file permissions are too broad: ${keyPath} (${mode.toString(8)})`);
+      } catch (err) { fatal(`Key file permission check failed: ${err.message}`); }
+    }
 
     // ── Database ──────────────────────────────────────────────────────────────
     log('info', 'Initialising database', { db: dbPath });
@@ -107,6 +125,7 @@ cmd
     }, c2.routes);
 
     initModule('delivery', () => delivery.init({ db, eventBus, dryRun: opts.dryRun ?? false }), delivery.routes);
+    server.registerPublicRoute('/api/v1/delivery/track', delivery.trackingRoutes);
     initModule('mitm', () => mitm.init({ db, eventBus }), mitm.routes);
     initModule('webapp', () => webapp.init({ db }), webapp.routes);
     initModule('post-exploit', () => postExploit.init({ db, eventBus, ADGraph, taskQueue: require('../../modules/c2/implant/task-queue') }), postExploit.routes);
