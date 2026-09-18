@@ -77,7 +77,7 @@ cmd
     try {
       validateRuntimeEnvironment();
       validated = validateStartOptions(opts);
-    catch (err) { fatal(err.message); }
+    } catch (err) { fatal(err.message); }
     const { port, host, dbPath } = validated;
     const keyPath = opts.key ?? process.env.HECATE_KEY_PATH;
 
