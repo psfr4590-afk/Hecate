@@ -105,6 +105,9 @@ cmd
       log('info', `${sig} — shutting down`);
       try {
         await server.stop();
+        recon.shutdown?.();
+        webapp.shutdown?.();
+        delivery.shutdown?.();
         c2.shutdown?.();
         evilProxy.shutdown?.();
         mitm.shutdown?.();
