@@ -68,6 +68,9 @@ router.post('/implants', async (req, res, next) => {
     const { engagementId, profileId, sleepSec, jitterPct } = req.body ?? {};
     if (!engagementId) throw new HecateError('HECATE_BAD_INPUT', 'engagementId required');
     requireEngagement(req, engagementId);
+    if (profileId && !profile.get(profileId, engagementId)) {
+      throw new HecateError('HECATE_NOT_FOUND', 'C2 profile not found in engagement');
+    }
 
     const id  = randomUUID();
     const key = protocol.generateKey();
