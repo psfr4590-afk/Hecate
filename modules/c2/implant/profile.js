@@ -43,12 +43,16 @@ function create(opts = {}) {
   return profile;
 }
 
-function get(id) {
-  return profiles.get(id) ?? null;
+function get(id, engagementId = null) {
+  const value = profiles.get(id) ?? null;
+  if (!value) return null;
+  if (engagementId && value.engagementId !== engagementId) return null;
+  return value;
 }
 
-function list() {
-  return [...profiles.values()];
+function list(engagementId = null) {
+  const values = [...profiles.values()];
+  return engagementId ? values.filter(p => p.engagementId === engagementId) : values;
 }
 
 function remove(id) {
