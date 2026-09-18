@@ -423,6 +423,21 @@ describe('Core: AuditLog', () => {
     assert.ok(result.checked >= 2);
   });
 
+  it('verify() detects tampering of subject and engagement scope', () => {
+    const db = require('./db/database').get();
+    const h = AuditLog.append('test:scoped', 'subject-a', 'detail', 'eng-a');
+    const row = db.prepare('SELECT * FROM audit_log WHERE hash=?').get(h);
+    db.exec('DROP TRIGGER audit_log_no_update');
+    try {
+      db.prepare('UPDATE audit_log SET subject=? WHERE id=?').run('subject-b', row.id);
+      assert.equal(AuditLog.verify().valid, false);
+      db.prepare('UPDATE audit_log SET subject=? WHERE id=?').run('subject-a', row.id);
+    } finally {
+      db.exec(`CREATE TRIGGER audit_log_no_update BEFORE UPDATE ON audit_log BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END`);
+    }
+    assert.equal(AuditLog.verify().valid, true);
+  });
+
   it('audit log is append-only at the database layer', () => {
     const rows = AuditLog.tail(1);
     assert.equal(rows.length, 1);
