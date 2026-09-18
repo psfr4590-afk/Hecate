@@ -53,12 +53,9 @@ router.get('/exchanges', (req, res, next) => {
       sessionId:      session ?? null,
       host:           host    ?? null,
       hasCredentials: creds === 'true',
+      engagementId:    eid ?? null,
       limit:          limit ? parseInt(limit, 10) : 100,
     });
-    if (!session && eid) {
-      const allowed = new Set(mitmStore.listSessions(eid).map(s => s.id));
-      exchanges = exchanges.filter(row => allowed.has(row.session_id));
-    }
     res.json({ exchanges, total: exchanges.length });
   } catch (err) { next(err); }
 });
@@ -74,11 +71,7 @@ router.get('/credentials', (req, res, next) => {
       if (!eid) throw new HecateError('HECATE_BAD_INPUT', 'eid or session required');
       requireEngagement(req, eid);
     }
-    let creds = mitmStore.listCredentials(sessionId);
-    if (!sessionId && eid) {
-      const allowed = new Set(mitmStore.listSessions(eid).map(s => s.id));
-      creds = creds.filter(row => allowed.has(row.session_id));
-    }
+    let creds = mitmStore.listCredentials(sessionId, eid);
     res.json({ credentials: creds, total: creds.length });
   } catch (err) { next(err); }
 });
@@ -94,11 +87,7 @@ router.get('/dns/rules', (req, res, next) => {
       if (!eid) throw new HecateError('HECATE_BAD_INPUT', 'eid or session required');
       requireEngagement(req, eid);
     }
-    let rules = mitmStore.listDnsRules(sessionId);
-    if (!sessionId && eid) {
-      const allowed = new Set(mitmStore.listSessions(eid).map(s => s.id));
-      rules = rules.filter(row => allowed.has(row.session_id));
-    }
+    let rules = mitmStore.listDnsRules(sessionId, eid);
     res.json({ rules, total: rules.length, active: dnsSpoofer.listEntries() });
   } catch (err) { next(err); }
 });
@@ -127,7 +116,7 @@ router.delete('/dns/rules/:hostname', (req, res, next) => {
     if (!sessionId) throw new HecateError('HECATE_BAD_INPUT', 'session query parameter required');
     requireResource(req, mitmStore.getSession(sessionId), 'MITM session');
     dnsSpoofer.removeEntry(req.params.hostname);
-    mitmStore.removeDnsRule(req.params.hostname);
+    mitmStore.removeDnsRule(req.params.hostname, sessionId);
     res.status(204).end();
   } catch (err) { next(err); }
 });
@@ -135,6 +124,9 @@ router.delete('/dns/rules/:hostname', (req, res, next) => {
 // POST /mitm/dns/start — start DNS server
 router.post('/dns/start', async (req, res, next) => {
   try {
+    const { eid } = req.body ?? {};
+    if (!eid) throw new HecateError('HECATE_BAD_INPUT', 'eid required');
+    requireEngagement(req, eid);
     if (dnsSpoofer.isRunning()) {
       return res.json({ ok: true, message: 'DNS spoofer already running' });
     }
@@ -146,6 +138,9 @@ router.post('/dns/start', async (req, res, next) => {
 
 router.post('/dns/stop', async (req, res, next) => {
   try {
+    const { eid } = req.body ?? {};
+    if (!eid) throw new HecateError('HECATE_BAD_INPUT', 'eid required');
+    requireEngagement(req, eid);
     await dnsSpoofer.stop();
     res.json({ ok: true });
   } catch (err) { next(err); }
@@ -153,13 +148,21 @@ router.post('/dns/stop', async (req, res, next) => {
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
-router.get('/config', (req, res) => {
-  res.json({ stripSsl: true, sniffCredentials: true, logTraffic: true });
+router.get('/config', (req, res, next) => {
+  try {
+    const eid = req.query.eid;
+    if (!eid) throw new HecateError('HECATE_BAD_INPUT', 'eid required');
+    requireEngagement(req, eid);
+    res.json({ stripSsl: true, sniffCredentials: true, logTraffic: true });
+  } catch (err) { next(err); }
 });
 
 router.patch('/config', (req, res, next) => {
   try {
-    pipeline.setConfig(req.body ?? {});
+    const { eid, ...config } = req.body ?? {};
+    if (!eid) throw new HecateError('HECATE_BAD_INPUT', 'eid required');
+    requireEngagement(req, eid);
+    pipeline.setConfig(config);
     res.json({ ok: true });
   } catch (err) { next(err); }
 });
@@ -175,14 +178,7 @@ router.get('/stats', (req, res, next) => {
       if (!eid) throw new HecateError('HECATE_BAD_INPUT', 'eid or session required');
       requireEngagement(req, eid);
     }
-    const sessionIds = sessionId ? [sessionId] : mitmStore.listSessions(eid).map(s => s.id);
-    const totals = sessionIds.reduce((acc, id) => {
-      const s = mitmStore.stats(id);
-      acc.exchanges += s.exchanges;
-      acc.credentials += s.credentials;
-      acc.dnsHits += s.dnsHits;
-      return acc;
-    }, { exchanges: 0, credentials: 0, dnsHits: 0 });
+    const totals = mitmStore.stats(sessionId, eid);
     res.json({ ...totals, dnsRunning: dnsSpoofer.isRunning() });
   } catch (err) { next(err); }
 });
