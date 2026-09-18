@@ -551,7 +551,9 @@ describe('WebSocket: ws-server', () => {
 
   it('broadcast reaches connected client', async () => {
     const addr = srv.address();
-    const ws   = new wsLib(`ws://127.0.0.1:${addr.port}`);
+    const ws   = new wsLib(`ws://127.0.0.1:${addr.port}`, {
+      headers: { 'X-Hecate-Token': process.env.HECATE_API_TOKEN },
+    });
 
     // Wait for welcome frame, then trigger broadcast
     const received = await new Promise((resolve, reject) => {
@@ -575,7 +577,9 @@ describe('WebSocket: ws-server', () => {
 
   it('clientCount returns connected count', async () => {
     const addr = srv.address();
-    const ws   = new wsLib(`ws://127.0.0.1:${addr.port}`);
+    const ws   = new wsLib(`ws://127.0.0.1:${addr.port}`, {
+      headers: { 'X-Hecate-Token': process.env.HECATE_API_TOKEN },
+    });
     await new Promise((resolve, reject) => {
       ws.on('message', (raw) => {
         const msg = JSON.parse(raw);
