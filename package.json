@@ -32,17 +32,17 @@
   "dependencies": {
     "commander": "^12.1.0",
     "express": "^4.21.0",
-    "ws": "^8.18.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.0",
     "supertest": "^7.0.0",
-    "vite": "^7.0.0",
-    "@vitejs/plugin-react": "^5.0.0"
+    "vite": "^7.0.0"
   },
   "optionalDependencies": {
-    "nodemailer": "^6.9.0"
+    "nodemailer": "^10.0.10"
   },
   "hecate": {
     "defaultPort": 7331,
