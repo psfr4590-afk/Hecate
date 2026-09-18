@@ -16,8 +16,9 @@ const router = Router();
 
 router.get('/campaigns', (req, res, next) => {
   try {
-    const engagementId = req.query.eid ?? null;
-    if (engagementId) requireEngagement(req, engagementId);
+    const engagementId = req.query.eid;
+    if (!engagementId) throw new HecateError('HECATE_BAD_INPUT', 'eid required');
+    requireEngagement(req, engagementId);
     const all = campaignManager.list(engagementId);
     res.json({ campaigns: all.map(safeCampaign), total: all.length });
   } catch (err) { next(err); }
