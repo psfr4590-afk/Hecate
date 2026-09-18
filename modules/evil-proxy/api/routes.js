@@ -85,7 +85,13 @@ router.get('/sessions', (req, res, next) => {
 // GET /evil-proxy/sessions/stats
 router.get('/sessions/stats', (req, res, next) => {
   try {
-    res.json(sessionMonitor.stats());
+    const { eid } = req.query;
+    if (!eid) throw new HecateError('HECATE_BAD_INPUT', 'eid required');
+    requireEngagement(req, eid);
+    const sessions = sessionMonitor.list({ engagementId: eid });
+    const byState = {};
+    for (const s of sessions) byState[s.state] = (byState[s.state] ?? 0) + 1;
+    res.json({ total: sessions.length, byState });
   } catch (err) { next(err); }
 });
 
