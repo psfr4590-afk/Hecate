@@ -5,6 +5,7 @@ const sendQueue       = require('./send/send-queue');
 const mailer          = require('./send/mailer');
 const tracker         = require('./tracking/tracker');
 const routes          = require('./api/routes');
+const trackingRoutes  = require('./api/tracking-routes');
 
 let _initialised = false;
 
@@ -31,4 +32,4 @@ function init(deps = {}) {
 
 function shutdown() { sendQueue.stop(); _initialised = false; }
 
-module.exports = { init, shutdown, routes };
+module.exports = { init, shutdown, routes, trackingRoutes };
