@@ -76,6 +76,15 @@ describe('Core: KeyManager', () => {
 // DB: Engagement model
 // ═══════════════════════════════════════════════════════════════════════════════
 
+describe('Core: database durability', () => {
+  it('uses WAL mode, foreign keys, and FULL synchronous durability', () => {
+    const db = require('./db/database').get();
+    assert.equal(db.prepare('PRAGMA journal_mode').get().journal_mode, 'wal');
+    assert.equal(db.prepare('PRAGMA foreign_keys').get().foreign_keys, 1);
+    assert.equal(db.prepare('PRAGMA synchronous').get().synchronous, 2);
+  });
+});
+
 describe('Core: Engagement model', () => {
   const Engagement = require('./db/models/engagement');
   let eid;
