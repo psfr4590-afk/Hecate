@@ -1,6 +1,7 @@
 'use strict';
 
 const webappStore = require('./storage/webapp-store');
+const scanner = require('./scanner/scanner');
 const routes      = require('./api/routes');
 let _initialised  = false;
 
