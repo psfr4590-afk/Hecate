@@ -26,7 +26,7 @@ export function Dashboard({ data, onNewEngagement, onNavigate, onVerify }) {
         <div className="module-grid">{(data.status?.modules || []).map(name=>{
           const safeName = String(name);
           const description = moduleDescriptions[safeName] || 'Registered module';
-          return <button type="button" className="module-card" key={safeName} onClick={()=>onNavigate(`module:${safeName}`} )} aria-label={`Open ${safeName} module controls`}>
+          return <button type="button" className="module-card" key={safeName} onClick={()=>onNavigate(`module:${safeName}`)} aria-label={`Open ${safeName} module controls`}>
             <span className="module-glyph">◇</span><div><strong>{safeName}</strong><small>{description}</small></div><span className="module-state">READY</span>
           </button>;
         })}</div>
