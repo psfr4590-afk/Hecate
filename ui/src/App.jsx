@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { api, getSavedToken, saveToken } from './api';
+import { api } from './api';
 import { Sidebar } from './components/Sidebar';
 import { Topbar } from './components/Topbar';
 import { Dashboard } from './components/Dashboard';
@@ -19,7 +19,6 @@ export function App() {
   const [connectionOpen, setConnectionOpen] = useState(false);
   const [newEngagementOpen, setNewEngagementOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [token, setToken] = useState(getSavedToken());
   const [connected, setConnected] = useState(false);
   const [connectionError, setConnectionError] = useState('');
   const [createError, setCreateError] = useState('');
@@ -32,11 +31,11 @@ export function App() {
     [data.engagements, activeEngagementId],
   );
 
-  const loadEngagement = useCallback(async (engagementId, authToken = token) => {
+  const loadEngagement = useCallback(async (engagementId) => {
     const [status, engagementsPayload, targets, findings, evidence, sessions, audit] = await Promise.all([
-      api.status(authToken), api.engagements(authToken), api.targets(engagementId, authToken),
-      api.findings(engagementId, authToken), api.evidence(engagementId, authToken),
-      api.sessions(engagementId, authToken), api.audit(engagementId, authToken),
+      api.status(), api.engagements(), api.targets(engagementId),
+      api.findings(engagementId), api.evidence(engagementId),
+      api.sessions(engagementId), api.audit(engagementId),
     ]);
     setData(current => ({
       ...current, status, engagements: engagementsPayload.engagements ?? [],
@@ -44,14 +43,13 @@ export function App() {
       sessions: sessions.sessions ?? [], audit: audit.entries ?? [],
       integrity: { state: 'unverified', hash: 'Awaiting verification', tip: 'Run verification' },
     }));
-  }, [token]);
+  }, []);
 
   const connect = useCallback(async () => {
     setConnectionError('');
     try {
-      const [status, engagementsPayload] = await Promise.all([api.status(token), api.engagements(token)]);
+      const [status, engagementsPayload] = await Promise.all([api.status(), api.engagements()]);
       const engagements = engagementsPayload.engagements ?? [];
-      saveToken(token);
       setConnected(true);
       if (!engagements.length) {
         setData(current => ({ ...current, status, engagements: [], targets: [], findings: [], evidence: [], sessions: [], audit: [], integrity: { state: 'unverified', hash: 'No engagement', tip: 'Create an engagement' } }));
@@ -59,16 +57,16 @@ export function App() {
       }
       const selected = engagements.some(item => item.id === activeEngagementId) ? activeEngagementId : engagements[0].id;
       setActiveEngagementId(selected);
-      await loadEngagement(selected, token);
+      await loadEngagement(selected);
       setConnectionOpen(false);
     } catch (error) {
       setConnected(false);
       setConnectionError(error.message ?? 'Unable to connect to the local node.');
     }
-  }, [token, activeEngagementId, loadEngagement]);
+  }, [activeEngagementId, loadEngagement]);
 
   const disconnect = () => {
-    saveToken(''); setToken(''); setConnected(false); setData(previewData);
+    setConnected(false); setData(previewData);
     setActiveEngagementId(previewData.engagements[0].id); setConnectionOpen(false);
   };
 
@@ -85,7 +83,7 @@ export function App() {
     setSubmitting(true); setCreateError('');
     const values = Object.fromEntries(new FormData(event.currentTarget));
     try {
-      const result = await api.createEngagement({ ...values, status: 'active' }, token);
+      const result = await api.createEngagement({ ...values, status: 'active' });
       const nextId = result.engagement.id;
       setActiveEngagementId(nextId); setNewEngagementOpen(false); await loadEngagement(nextId);
     } catch (error) { setCreateError(error.message); } finally { setSubmitting(false); }
@@ -94,7 +92,7 @@ export function App() {
   const verifyIntegrity = async () => {
     if (!connected) { setConnectionOpen(true); return; }
     try {
-      const result = await api.verifyAudit(token);
+      const result = await api.verifyAudit();
       setData(current => ({ ...current, integrity: {
         state: result.valid ? 'valid' : 'invalid',
         hash: result.hash ?? result.lastHash ?? 'Verified',
@@ -114,7 +112,7 @@ export function App() {
     return () => window.removeEventListener('keydown', handleKey);
   }, []);
 
-  useEffect(() => { if (getSavedToken()) connect(); }, []); // sessionStorage token intentionally reconnects once
+  useEffect(() => { connect(); }, [connect]);
 
   const viewData = { ...data, engagement: activeEngagement };
 
@@ -131,7 +129,7 @@ export function App() {
           : <Workspace view={activeView} data={viewData} onNewEngagement={() => setNewEngagementOpen(true)} />}
       </main>
     </div>
-    <ConnectionDialog open={connectionOpen} token={token} onTokenChange={setToken} onConnect={connect} onDisconnect={disconnect} connected={connected} error={connectionError} onClose={() => setConnectionOpen(false)} />
+    <ConnectionDialog open={connectionOpen} onConnect={connect} onDisconnect={disconnect} connected={connected} error={connectionError} onClose={() => setConnectionOpen(false)} />
     <NewEngagementDialog open={newEngagementOpen} onClose={() => setNewEngagementOpen(false)} onCreate={createEngagement} submitting={submitting} error={createError} />
     <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} onNavigate={setActiveView} data={viewData} />
   </div>;
