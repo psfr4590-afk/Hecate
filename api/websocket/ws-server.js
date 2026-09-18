@@ -10,6 +10,7 @@ const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 const Engagement = require('../../core/db/models/engagement');
 const wsPolicy = require('./ws-policy');
+const auth = require('../middleware/auth');
 
 const PING_INTERVAL_MS = 30_000;
 let wss = null;
@@ -34,6 +35,10 @@ function extractToken(req) {
   return null;
 }
 
+function hasBrowserSession(req) {
+  return auth.hasLocalSession(req);
+}
+
 function nextId() {
   return crypto.randomUUID();
 }
@@ -54,7 +59,7 @@ function attach(httpServer, opts = {}) {
     }
 
     const token = extractToken(req);
-    if (!safeEqual(token, expectedToken)) {
+    if (!safeEqual(token, expectedToken) && !hasBrowserSession(req)) {
       ws.close(1008, 'Authentication required');
       return;
     }
