@@ -160,11 +160,18 @@ router.get('/phishlets', (req, res, next) => {
 // ── Misc ──────────────────────────────────────────────────────────────────────
 
 // GET /evil-proxy/status
-router.get('/status', (req, res) => {
-  const lures    = phishletStore.listLures();
-  const active   = lures.filter(l => l.active).length;
-  const sessions = sessionMonitor.stats();
-  res.json({ lures: lures.length, activeLures: active, sessions });
+router.get('/status', (req, res, next) => {
+  try {
+    const { eid } = req.query;
+    if (!eid) throw new HecateError('HECATE_BAD_INPUT', 'eid required');
+    requireEngagement(req, eid);
+    const lures = phishletStore.listLures(eid);
+    const active = lures.filter(l => l.active).length;
+    const sessions = sessionMonitor.list({ engagementId: eid });
+    const byState = {};
+    for (const s of sessions) byState[s.state] = (byState[s.state] ?? 0) + 1;
+    res.json({ lures: lures.length, activeLures: active, sessions: { total: sessions.length, byState } });
+  } catch (err) { next(err); }
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
