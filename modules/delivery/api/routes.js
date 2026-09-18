@@ -157,7 +157,7 @@ function safeCampaign(c) {
   const { _targets, template, ...safe } = c;
   return {
     ...safe,
-    targetCount:  _targets?.length ?? 0,
+    targetCount:  targetStore.count(c.id),
     hasTemplate:  !!template,
   };
 }
