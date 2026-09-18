@@ -475,6 +475,12 @@ describe('Routes: audit', () => {
   mockModule('core/audit/audit-log', AuditLog);
   mockModule('core/db/models/engagement', Engagement);
 
+  // authorization.js caches its Engagement dependency when the earlier
+  // engagement/session route suites load it. Refresh that module here so the
+  // audit suite authorizes against this suite's engagement fixture rather than
+  // a prior suite's mock store.
+  delete require.cache[require.resolve('../core/auth/authorization')];
+
   const auditRouter = require('./routes/audit');
   let app, srv;
 
