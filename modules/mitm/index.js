@@ -30,6 +30,7 @@ function init(deps = {}) {
 
 async function shutdown() {
   if (dnsSpoofer.isRunning()) await dnsSpoofer.stop();
+  _initialised = false;
 }
 
 module.exports = { init, shutdown, routes };
