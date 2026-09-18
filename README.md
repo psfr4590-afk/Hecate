@@ -24,6 +24,31 @@ node --experimental-sqlite cli/index.js start
 
 Platform is now listening at `http://127.0.0.1:7331`.
 
+## Operator console
+
+The React operator console is built once and served by the same local HECATE process.
+
+```bash
+npm install
+npm run build:ui
+npm start
+```
+
+Open `http://127.0.0.1:7331/`. The console keeps the API token in browser `sessionStorage`, so closing the browser session clears it.
+
+For UI development with hot reload:
+
+```bash
+# Terminal 1
+npm start
+
+# Terminal 2
+npm run dev:ui
+```
+
+The Vite development server listens on `127.0.0.1:4173` and proxies API requests to the local HECATE node.
+
+
 ## Environment variables
 
 | Variable             | Required | Description                              |
@@ -66,9 +91,11 @@ The C2 beacon endpoint (`POST /c2/beacon`) uses per-implant AES-256 keys — no 
 ## Running tests
 
 ```bash
-# All suites (357 tests)
+# Full regression suite
+npm test
+
+# Module-only suite
 node --experimental-sqlite --test \
-  core/core.test.js \
   modules/recon/recon.test.js \
   modules/evil-proxy/evil-proxy.test.js \
   modules/c2/c2.test.js \
@@ -78,7 +105,7 @@ node --experimental-sqlite --test \
   modules/post-exploit/post-exploit.test.js
 
 # Individual module
-node --test modules/recon/recon.test.js
+node --experimental-sqlite --test modules/recon/recon.test.js
 ```
 
 ## Architecture
@@ -86,6 +113,7 @@ node --test modules/recon/recon.test.js
 ```
 hecate/
 ├── cli/                        Entry point + commands (start, keygen)
+├── ui/                         React operator console + Vite build
 ├── api/
 │   ├── server.js               Express + HTTP + WebSocket server
 │   ├── router.js               Mounts core + module routes at /api/v1/
