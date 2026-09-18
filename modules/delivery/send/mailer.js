@@ -38,6 +38,7 @@ function addProfile(p) {
   if (!p.host) throw new Error('SMTP profile requires host');
   profiles.set(p.id, {
     id:   p.id,
+    engagementId: p.engagementId ?? null,
     host: p.host,
     port: p.port ?? 587,
     secure: p.secure ?? (p.port === 465),
@@ -47,8 +48,17 @@ function addProfile(p) {
 }
 
 function removeProfile(id) { profiles.delete(id); }
-function getProfile(id)    { return profiles.get(id) ?? null; }
-function listProfiles()    { return [...profiles.values()].map(p => ({ ...p, auth: p.auth ? { user: p.auth.user } : null })); }
+function getProfile(id, engagementId = null) {
+  const profile = profiles.get(id) ?? null;
+  if (!profile) return null;
+  if (engagementId && profile.engagementId !== engagementId) return null;
+  return profile;
+}
+function listProfiles(engagementId = null) {
+  return [...profiles.values()]
+    .filter(p => !engagementId || p.engagementId === engagementId)
+    .map(p => ({ ...p, auth: p.auth ? { user: p.auth.user } : null }));
+}
 
 /**
  * Send an email.
@@ -63,7 +73,7 @@ function listProfiles()    { return [...profiles.values()].map(p => ({ ...p, aut
  * @param {object} opts.headers      — additional headers (X-Mailer, etc.)
  */
 async function send(opts) {
-  const { to, fromName, fromEmail, subject, html, text, smtpProfileId, headers } = opts;
+  const { to, fromName, fromEmail, subject, html, text, smtpProfileId, engagementId, headers } = opts;
 
   if (_dryRun) {
     _eventBus?.emit('delivery:dry_run', { to, subject, ts: new Date().toISOString() });
@@ -74,7 +84,7 @@ async function send(opts) {
     throw new Error('nodemailer not installed — run: npm install nodemailer');
   }
 
-  const profile = smtpProfileId ? profiles.get(smtpProfileId) : null;
+  const profile = smtpProfileId ? getProfile(smtpProfileId, engagementId) : null;
   if (smtpProfileId && !profile) {
     throw new Error(`SMTP profile not found: ${smtpProfileId}`);
   }
