@@ -2,7 +2,7 @@
 
 /**
  * HECATE — Sliding Window Rate Limiter
- * In-memory, no external deps. Keyed by API token or IP fallback.
+ * In-memory, no external deps. Keyed by client IP. Authentication runs after this middleware, so token identity is intentionally not available here.
  * Automatically prunes expired windows on each check.
  */
 
@@ -33,11 +33,13 @@ const pruner = setInterval(() => {
 function rateLimitMiddleware(opts = {}) {
   const windowMs = opts.windowMs ?? DEFAULT_WINDOW_MS;
   const max      = opts.max      ?? DEFAULT_MAX;
+  if (!Number.isFinite(windowMs) || windowMs <= 0) throw new TypeError('windowMs must be a positive number');
+  if (!Number.isInteger(max) || max <= 0) throw new TypeError('max must be a positive integer');
   const message  = opts.message  ?? 'Too many requests — slow down.';
 
   return function rateLimit(req, res, next) {
-    // Key: prefer token identity over IP (token is already authenticated)
-    const key = req.hecateToken ?? req.ip ?? 'unknown';
+    // Auth runs later in the middleware chain, so use the transport-level client IP here.
+    const key = req.ip ?? 'unknown';
 
     const now    = Date.now();
     const cutoff = now - windowMs;
@@ -71,3 +73,4 @@ module.exports = rateLimitMiddleware();
 
 // Named export: factory for custom limits
 module.exports.create = rateLimitMiddleware;
+module.exports.clear = () => windows.clear();
