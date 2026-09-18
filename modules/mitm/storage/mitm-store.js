@@ -178,8 +178,9 @@ function listDnsRules(sessionId, engagementId) {
   return db.prepare(`SELECT * FROM mitm_dns_rules ORDER BY created_at DESC`).all();
 }
 
-function removeDnsRule(hostname) {
-  db.prepare(`DELETE FROM mitm_dns_rules WHERE hostname=?`).run(hostname.toLowerCase());
+function removeDnsRule(hostname, sessionId = null) {
+  if (sessionId) return db.prepare(`DELETE FROM mitm_dns_rules WHERE hostname=? AND session_id=?`).run(hostname.toLowerCase(), sessionId).changes;
+  return db.prepare(`DELETE FROM mitm_dns_rules WHERE hostname=?`).run(hostname.toLowerCase()).changes;
 }
 
 function stats(sessionId, engagementId) {
