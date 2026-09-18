@@ -79,7 +79,7 @@ async function start(opts) {
   frontier.seed(seedUrls);
 
   const cancelToken = { cancelled: false };
-  activeJobs.set(jobId, { frontier, cancelToken, config, engagementId });
+  activeJobs.set(jobId, { frontier, cancelToken, config, engagementId, done: null });
 
   // Persist job record
   reconStore.createJob({ id: jobId, engagementId, targetId, seedUrls, config });
@@ -90,10 +90,11 @@ async function start(opts) {
   });
 
   // Start the crawl asynchronously — don't await
-  _runJob(jobId, frontier, cancelToken, config, rateLimiter).catch(err => {
+  const done = _runJob(jobId, frontier, cancelToken, config, rateLimiter).catch(err => {
     reconStore.failJob(jobId, err.message);
     resultWriter.emitError(engagementId, jobId, err);
   });
+  activeJobs.get(jobId).done = done;
 
   return jobId;
 }
@@ -115,7 +116,10 @@ function list() {
 }
 
 async function shutdown() {
-  for (const jobId of [...activeJobs.keys()]) cancel(jobId);
+  const jobs = [...activeJobs.values()];
+  for (const job of jobs) job.cancelToken.cancelled = true;
+  await Promise.all(jobs.map(job => job.done).filter(Boolean));
+  for (const jobId of [...activeJobs.keys()]) activeJobs.delete(jobId);
 }
 
 // ── Job runner ────────────────────────────────────────────────────────────────
@@ -275,4 +279,4 @@ async function _processUrl(jobId, entry, frontier, cancelToken, config, fetcher,
   }
 }
 
-module.exports = { start, cancel, list, DEFAULT_CONFIG };
+module.exports = { start, cancel, list, shutdown, DEFAULT_CONFIG };
