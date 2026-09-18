@@ -65,7 +65,8 @@ export function App() {
     }
   }, [activeEngagementId, loadEngagement]);
 
-  const disconnect = () => {
+  const disconnect = async () => {
+    try { await api.logout(); } catch {}
     setConnected(false); setData(previewData);
     setActiveEngagementId(previewData.engagements[0].id); setConnectionOpen(false);
   };
