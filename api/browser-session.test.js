@@ -50,7 +50,7 @@ describe('Local browser session authentication', () => {
     const r = await request('/bootstrap');
     assert.equal(r.status, 200);
     const cookie = r.headers['set-cookie']?.[0] ?? '';
-    assert.match(cookie, /^hecate_session=[^;]+; Path=\/; HttpOnly; SameSite=Strict$/);
+    assert.match(cookie, /^hecate_session=[^;]+; Path=\/; HttpOnly; SameSite=Strict; Max-Age=28800$/);
   });
 
   it('accepts the minted browser session without exposing the API token', async () => {
@@ -60,6 +60,12 @@ describe('Local browser session authentication', () => {
     const r = await request('/protected', { Cookie: cookie });
     assert.equal(r.status, 200);
     assert.equal(JSON.parse(r.body).auth, 'local-session');
+  });
+
+  it('rejects an expired browser session', async () => {
+    const cookie = auth.issueSessionCookie({ expiresAt: Date.now() - 1 });
+    const r = await request('/protected', { Cookie: `hecate_session=${cookie}` });
+    assert.equal(r.status, 401);
   });
 
   it('rejects a forged browser session', async () => {
