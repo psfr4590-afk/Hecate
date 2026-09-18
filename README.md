@@ -119,6 +119,18 @@ X-Hecate-Token: <HECATE_API_TOKEN>
 
 The C2 beacon endpoint (`POST /c2/beacon`) uses per-implant AES-256 keys — no operator token required.
 
+## End-to-end smoke test
+
+The repository also includes a disposable end-to-end smoke test using OWASP Juice Shop. It starts Juice Shop in Docker, starts an isolated HECATE runtime with a temporary SQLite database and operator key, creates an engagement and target, runs Recon and the Web Application scanner, verifies persisted results, verifies the audit chain, and removes all temporary resources.
+
+Docker must be running locally.
+
+```bash
+npm run test:e2e:juice-shop
+```
+
+The E2E test is intentionally separate from `npm test` because it requires Docker and performs real HTTP requests against a disposable local application.
+
 ## Running tests
 
 ```bash
