@@ -86,6 +86,7 @@ function pauseCampaign(campaignId) { _state(campaignId); db.prepare(`UPDATE deli
 function resumeCampaign(campaignId) { _state(campaignId); db.prepare(`UPDATE delivery_queue_state SET paused=0 WHERE campaign_id=?`).run(campaignId); _scheduleNext(campaignId); }
 function size(campaignId) { return db.prepare(`SELECT COUNT(*) n FROM delivery_send_queue WHERE campaign_id=? AND status='queued'`).get(campaignId)?.n ?? 0; }
 function clearCampaign(campaignId) { const t=timers.get(campaignId); if(t) clearTimeout(t); timers.delete(campaignId); db.prepare(`DELETE FROM delivery_send_queue WHERE campaign_id=?`).run(campaignId); db.prepare(`DELETE FROM delivery_queue_state WHERE campaign_id=?`).run(campaignId); }
-function clearAll() { for(const t of timers.values()) clearTimeout(t); timers.clear(); db.prepare(`DELETE FROM delivery_send_queue`).run(); db.prepare(`DELETE FROM delivery_queue_state`).run(); }
+function stop() { for (const t of timers.values()) clearTimeout(t); timers.clear(); }
+function clearAll() { stop(); db.prepare(`DELETE FROM delivery_send_queue`).run(); db.prepare(`DELETE FROM delivery_queue_state`).run(); }
 function stats(campaignId) { const s=db.prepare(`SELECT * FROM delivery_queue_state WHERE campaign_id=?`).get(campaignId); if(!s) return null; return { queued:size(campaignId), sent:s.sent, errors:s.errors, paused:!!s.paused }; }
 module.exports={init,setMailer,setEventBus,recover,enqueue,pauseCampaign,resumeCampaign,size,clearCampaign,clearAll,stats};
