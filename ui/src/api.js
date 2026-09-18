@@ -3,7 +3,7 @@ const BASE = '/api/v1';
 async function request(path, token, options = {}) {
   const headers = { Accept: 'application/json', ...(options.body ? { 'Content-Type': 'application/json' } : {}) };
   if (token) headers.Authorization = `Bearer ${token}`;
-  const response = await fetch(`${BASE}${path}`, { ...options, headers: { ...headers, ...(options.headers || {}) } });
+  const response = await fetch(`${BASE}${path}`, { credentials: 'same-origin', ...options, headers: { ...headers, ...(options.headers || {}) } });
   const text = await response.text();
   let body = {};
   try { body = text ? JSON.parse(text) : {}; } catch { body = { error: { message: text } }; }
