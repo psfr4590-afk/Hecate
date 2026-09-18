@@ -12,4 +12,6 @@ function init(deps = {}) {
   _initialised = true;
 }
 
-module.exports = { init, shutdown: scanner.shutdown, routes };
+async function shutdown() { await scanner.shutdown(); _initialised = false; }
+
+module.exports = { init, shutdown, routes };
