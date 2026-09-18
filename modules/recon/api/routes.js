@@ -20,8 +20,9 @@ const router = Router();
 // GET /recon/jobs?eid=
 router.get('/jobs', (req, res, next) => {
   try {
-    const engagementId = req.query.eid ?? null;
-    if (engagementId) requireEngagement(req, engagementId);
+    const engagementId = req.query.eid;
+    if (!engagementId) throw new HecateError('HECATE_BAD_INPUT', 'eid required');
+    requireEngagement(req, engagementId);
     const jobs = reconStore.listJobs(engagementId);
     res.json({ jobs, total: jobs.length });
   } catch (err) { next(err); }
