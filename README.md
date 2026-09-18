@@ -1,71 +1,162 @@
 # HECATE
 
-Unified operator-grade red team platform. Local-first, zero backend costs, full operator control.
+Unified, local-first operator platform for authorized security assessments and red-team engagements. HECATE keeps assessment scope, execution, evidence, findings, sessions, and audit history in one local control plane.
+
+## Current status
+
+HECATE currently contains a working local platform with:
+
+- A SQLite-backed core using WAL mode, foreign keys, durable audit history, and encrypted sensitive material.
+- A local REST API and WebSocket event channel.
+- A React operator console served by the same local process.
+- A CLI for key generation and platform startup.
+- Seven registered capability modules: Recon, Evil Proxy, C2, Delivery, MITM, WebApp, and Post-Exploit.
+- Engagement-scoped authorization across the core assessment workflow and hardened module data paths.
+- Persistent queues and restart/reconciliation behavior for the modules that use durable jobs.
+- Browser sessions with signed, HttpOnly, SameSite=Strict cookies and an eight-hour session lifetime.
+- Public recipient-facing Delivery tracking endpoints, kept separate from authenticated operator routes.
+- Regression coverage for core, API, WebSocket, browser-session, all seven module suites, UI capability-surface checks, and encoding checks.
+- A dashboard that exposes the complete registered capability surface without pretending that every backend capability already has a dedicated GUI control.
+
+The current console provides active execution controls for **Recon** and **WebApp**. The other five modules are currently exposed through capability inventories and their real API surfaces rather than through fabricated or incomplete GUI launchers.
 
 ## Requirements
 
-- Node.js **≥ 22.0.0** (uses `node:sqlite` — the `--experimental-sqlite` flag is required for core/API commands)
-- No native build dependencies
+- Node.js **22 or newer**
+- Node's `node:sqlite` support. HECATE is started with `--experimental-sqlite`.
+- No separate native build toolchain is required by the core application.
 
 ## First-run setup
 
+Install dependencies from the repository lockfile:
+
 ```bash
-# 1. Install dependencies
 npm ci
-
-# 2. Generate an AES-256 operator key (do this once)
-node cli/index.js keygen --out ~/.hecate/operator.key
-
-# 3. Start the platform
-HECATE_API_TOKEN=<your-token> \
-HECATE_KEY_PATH=~/.hecate/operator.key \
-node --experimental-sqlite cli/index.js start
 ```
 
-Platform is now listening at `http://127.0.0.1:7331`.
+Generate the operator encryption key once:
+
+```bash
+node cli/index.js keygen --out ~/.hecate/operator.key
+```
+
+Start HECATE:
+
+```bash
+HECATE_API_TOKEN=<your-token> \
+HECATE_KEY_PATH=~/.hecate/operator.key \
+npm start
+```
+
+The default local listener is:
+
+```
+http://127.0.0.1:7331
+```
+
+The startup command validates the Node runtime, SQLite availability, startup options, database directory access, and, on POSIX systems, restrictive operator-key permissions before initializing the platform.
+
+## Operator workflow
+
+The platform's actual data flow is centered on:
+
+```
+Engagement
+   ↓
+Target
+   ↓
+Module execution
+   ↓
+Session / Job
+   ↓
+Evidence / Finding
+   ↓
+Audit history
+```
+
+An engagement establishes scope and lifecycle context. Targets are reusable assessment assets. Modules operate against authorized engagement targets and persist their resulting observations, sessions, evidence, findings, or jobs into the shared platform.
+
+The seven module workflows are:
+
+1. **Recon** — scoped web crawling, page and asset discovery, forms, secret discovery, evidence, and cancellable jobs.
+2. **Evil Proxy** — phishing lures, victim-session handling, phishlet-backed proxying, and session export.
+3. **C2** — implant registration, per-implant cryptographic authentication, task queueing, beacon handling, and result collection.
+4. **Delivery** — campaign management, target ingestion, delivery state control, SMTP profiles, and recipient tracking.
+5. **MITM** — interception sessions, DNS rule management, DNS service control, traffic records, and credential records.
+6. **WebApp** — target-scoped web application scanning, generated requests, findings, scan statistics, and cancellation.
+7. **Post-Exploit** — hash ingestion, Kerberoast workflows, AD attack-path analysis, and C2-backed dump/task workflows.
+
+These descriptions reflect implemented backend capabilities. They do not imply that every capability has a dedicated GUI workflow.
 
 ## Assessment architecture
 
-HECATE separates assessment planning from individual capability modules.
+HECATE separates shared assessment state from individual capability modules.
 
 ```
 Assessment
-  ├── Scope / engagement context
+  ├── Engagement / scope
   ├── Target inventory
-  ├── Target classification
-  ├── Attack-surface discovery
-  ├── Network / traffic profile
-  ├── Applicable test cases
-  ├── Execution / observations
+  ├── Module execution
+  ├── Sessions / jobs
   ├── Evidence
   ├── Findings
-  ├── Retest / validation
-  └── Audit trail
+  ├── Audit trail
+  └── Retest / validation records
 ```
 
-Targets are generic assessment assets rather than module-specific objects. A target may represent an application, API, host, service, identity boundary, wallet/custody component, smart contract, RPC endpoint, or other asset.
+Targets are generic assessment assets rather than module-specific objects. A target can represent an application, API, host, service, identity boundary, wallet/custody component, smart contract, RPC endpoint, or other authorized asset.
 
 Target priority is derived from data sensitivity and business criticality. The combined value is a planning signal, not a vulnerability score.
 
-Shared network profiles provide consistent assessment traffic behavior across modules, including assessment mode, concurrency, pacing, bounded retries/backoff, connection reuse, and explicit proxy/tunnel/DNS route metadata.
+Shared network profiles provide consistent assessment traffic behavior across applicable modules, including assessment mode, concurrency, pacing, bounded retries/backoff, connection reuse, and explicit proxy/tunnel/DNS route metadata.
+
+## Security and isolation model
+
+HECATE is designed around a single local operator rather than a multi-user IAM model.
+
+- Operator API routes use the configured API token or the local signed browser session.
+- Browser sessions are process-scoped, HttpOnly, SameSite=Strict, signed, and expire after eight hours.
+- WebSocket connections apply origin, authentication, payload, heartbeat, and engagement-scope controls.
+- C2 implants use their own per-implant AES-based protocol rather than the operator API token.
+- Sensitive stored material is encrypted using the operator key.
+- Engagement membership is enforced on protected module resources where engagement scope applies.
+- SQLite uses WAL mode, foreign keys, full synchronous durability, and append-only audit protections.
+- New audit entries include the relevant subject and engagement context in their hash-chain input.
+- Existing legacy audit entries remain verifiable using their original hash format.
+
+The system is not a multi-operator authorization platform. Direct database administrators can bypass application-level append-only controls. MITM DNS runtime state is process-global even though its control API is engagement-authorized. These are current architectural characteristics, not undocumented guarantees.
 
 ## Runtime-data isolation
 
-Real engagement data stays outside the Git repository. Runtime databases, WAL/SHM files, evidence, logs, coverage, generated UI output, operator keys, environment files, certificates, and private keys are ignored.
+Real engagement data stays outside the Git repository. Runtime databases, WAL/SHM files, evidence, logs, coverage output, generated UI output, operator keys, environment files, certificates, and private keys are ignored.
 
 Use synthetic fixtures for repository tests. Never commit real target credentials, tokens, session material, wallet seeds/private keys, captured evidence, or client runtime databases.
 
 ## Operator console
 
-The React operator console is built once and served by the same local HECATE process.
+The React operator console is built and served by the same local HECATE process.
+
+Build the production console:
 
 ```bash
-npm install
 npm run build:ui
+```
+
+Start HECATE:
+
+```bash
 npm start
 ```
 
-Open `http://127.0.0.1:7331/`. The local node issues a process-scoped browser session cookie; the API token is not copied into browser storage.
+Then open:
+
+```
+http://127.0.0.1:7331/
+```
+
+The local node issues a process-scoped browser session cookie. The API token is not copied into browser storage.
+
+The dashboard exposes the core control plane plus all seven registered modules. Module workspaces show the implemented capability and API surface. Recon and WebApp additionally expose active run/cancel controls in the current console.
 
 For UI development with hot reload:
 
@@ -79,180 +170,328 @@ npm run dev:ui
 
 The Vite development server listens on `127.0.0.1:4173` and proxies API requests to the local HECATE node.
 
-
 ## Environment variables
 
-| Variable             | Required | Description                              |
-|----------------------|----------|------------------------------------------|
-| `HECATE_API_TOKEN`   | Yes      | Bearer token for all API requests        |
-| `HECATE_KEY_PATH`    | Yes      | Path to AES-256 key file (32 bytes)      |
-| `HECATE_PORT`        | No       | API port (default: `7331`)               |
-| `HECATE_HOST`        | No       | Bind address (default: `127.0.0.1`)      |
-| `HECATE_PHISHLET_DIR`| No       | Directory for custom phishlet JSON files |
+| Variable | Required | Description |
+|---|---|---|
+| `HECATE_API_TOKEN` | Yes | Operator API token |
+| `HECATE_KEY_PATH` | Yes | Path to the 32-byte AES-256 operator key |
+| `HECATE_PORT` | No | API port, default `7331` |
+| `HECATE_HOST` | No | Bind address, default `127.0.0.1` |
+| `HECATE_PHISHLET_DIR` | No | Directory for custom phishlet JSON files |
 
-## CLI options
+## CLI
+
+Start:
+
+```bash
+node --experimental-sqlite cli/index.js start [options]
+```
+
+Options:
 
 ```
-node --experimental-sqlite cli/index.js start [options]
+-p, --port <port>    Port (default: 7331)
+-H, --host <host>    Bind address (default: 127.0.0.1)
+-d, --db <path>      SQLite database path (default: ./data/hecate.db)
+-k, --key <path>     AES-256 key file path (overrides HECATE_KEY_PATH)
+--dry-run            Delivery mode: queue sends without actually sending email
+--log-level <level>  Log level
+```
 
-  -p, --port <port>    Port (default: 7331)
-  -H, --host <host>    Bind address (default: 127.0.0.1)
-  -d, --db <path>      SQLite database path (default: ./data/hecate.db)
-  -k, --key <path>     Key file path (overrides HECATE_KEY_PATH)
-  --dry-run            Delivery module: queue sends but do not actually send email
+Generate a key:
 
+```bash
 node cli/index.js keygen [options]
+```
 
-  -o, --out <path>     Key output path (default: ~/.hecate/operator.key)
-  --force              Overwrite existing key
+Options:
+
+```
+-o, --out <path>     Key output path (default: ~/.hecate/operator.key)
+--force              Overwrite an existing key
 ```
 
 ## API authentication
 
-All operator `/api/v1/*` requests require:
+Authenticated operator routes are under `/api/v1/`.
+
+They accept either:
 
 ```
 Authorization: Bearer <HECATE_API_TOKEN>
-# or
+```
+
+or:
+
+```
 X-Hecate-Token: <HECATE_API_TOKEN>
 ```
 
-The C2 beacon endpoint (`POST /c2/beacon`) uses per-implant AES-256 keys — no operator token required. Delivery tracking endpoints under `/api/v1/delivery/track/*` are intentionally public so recipients can trigger tracking without an operator token.
+There are two intentional exceptions:
 
-## Running tests
+- `POST /c2/beacon` is an implant-facing endpoint and uses the implant's cryptographic protocol instead of the operator token.
+- `/api/v1/delivery/track/*` is recipient-facing Delivery tracking and is intentionally public so an external recipient can trigger an open, click, or submission event.
 
-```bash
-# Full regression suite
-npm test
+## API reference
 
-# Module-only suite
-node --experimental-sqlite --test \
-  modules/recon/recon.test.js \
-  modules/evil-proxy/evil-proxy.test.js \
-  modules/c2/c2.test.js \
-  modules/delivery/delivery.test.js \
-  modules/mitm/mitm.test.js \
-  modules/webapp/webapp.test.js \
-  modules/post-exploit/post-exploit.test.js
+The routes below reflect the implemented route surface. Authentication and engagement requirements still apply according to the module's authorization rules.
 
-# Individual module
-node --experimental-sqlite --test modules/recon/recon.test.js
+### Core — `/api/v1/`
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET, POST | `/engagements` | Engagement management |
+| GET, POST, PATCH, DELETE | `/targets` | Target management and search |
+| GET, POST | `/credentials` | Encrypted credential records |
+| GET, POST | `/sessions` | Module session tracking |
+| GET, POST | `/evidence` | Evidence records |
+| GET, POST | `/findings` | Finding records |
+| GET | `/graph/targets/:eid` | Target relationship graph |
+| POST | `/graph/ad/ingest` | BloodHound JSON ingestion |
+| GET | `/audit` | Audit history |
+| GET | `/audit/verify` | Verify the audit hash chain |
+| GET | `/status` | Platform/module status |
+
+### Recon — `/api/v1/recon/`
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/jobs` | List jobs |
+| POST | `/jobs` | Start a crawl |
+| GET | `/jobs/:id` | Job detail |
+| GET | `/jobs/:id/stats` | Job statistics |
+| DELETE | `/jobs/:id` | Cancel a job |
+| GET | `/jobs/:id/pages` | Crawled pages |
+| GET | `/jobs/:id/secrets` | Discovered secrets |
+| GET | `/jobs/:id/forms` | Discovered forms |
+| GET | `/config/defaults` | Default crawler configuration |
+| GET | `/profiles` | Recon profiles |
+
+### Evil Proxy — `/api/v1/evil-proxy/`
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/lures` | List lures |
+| POST | `/lures` | Create a lure |
+| GET | `/lures/:id` | Lure detail |
+| DELETE | `/lures/:id` | Delete a lure |
+| GET | `/sessions` | Victim sessions |
+| GET | `/sessions/stats` | Session statistics |
+| GET | `/sessions/:lureId/:victimSid` | Session detail |
+| GET | `/sessions/:lureId/:victimSid/export` | Export a harvested session |
+| GET | `/phishlets` | Available phishlets |
+| GET | `/status` | Module status |
+
+### C2 — `/api/v1/c2/`
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/implants` | List implants |
+| GET | `/implants/stats` | Implant statistics |
+| POST | `/implants` | Register an implant |
+| DELETE | `/implants/:id` | Remove an implant |
+| GET | `/implants/:id/tasks` | List implant tasks |
+| POST | `/implants/:id/tasks` | Queue an implant task |
+| DELETE | `/implants/:id/tasks/:taskId` | Remove a queued task |
+| GET | `/implants/:id/results` | Retrieve task results |
+| GET | `/tasks/:taskId/result` | Retrieve an individual task result |
+| GET | `/profiles` | List engagement-scoped implant profiles |
+| POST | `/profiles` | Create an engagement-scoped implant profile |
+| GET | `/status` | Module status |
+
+Implant communication is handled separately at:
+
 ```
+POST /c2/beacon
+```
+
+### Delivery — `/api/v1/delivery/`
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/campaigns` | List campaigns |
+| POST | `/campaigns` | Create a campaign |
+| GET | `/campaigns/:id` | Campaign detail |
+| GET | `/campaigns/:id/stats` | Campaign statistics |
+| POST | `/campaigns/:id/targets` | Import/add campaign targets |
+| GET | `/campaigns/:id/targets` | List campaign targets |
+| POST | `/campaigns/:id/state` | Start, pause, or complete a campaign |
+| DELETE | `/campaigns/:id` | Delete a campaign |
+| GET | `/smtp` | List engagement-scoped SMTP profiles |
+| POST | `/smtp` | Create an SMTP profile |
+| DELETE | `/smtp/:id` | Delete an SMTP profile |
+
+Public recipient tracking:
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/track/open/:trackingId` | Open tracking |
+| GET | `/track/click/:trackingId/:linkId` | Click tracking/redirect |
+| POST | `/track/submit/:trackingId` | Submission tracking |
+
+### MITM — `/api/v1/mitm/`
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/sessions` | List interception sessions |
+| POST | `/sessions` | Create an interception session |
+| DELETE | `/sessions/:id` | Delete a session |
+| GET | `/exchanges` | Intercepted traffic |
+| GET | `/credentials` | Captured credential records |
+| GET | `/dns/rules` | List DNS rules |
+| POST | `/dns/rules` | Add a DNS rule |
+| DELETE | `/dns/rules/:hostname` | Remove a DNS rule |
+| POST | `/dns/start` | Start the DNS service |
+| POST | `/dns/stop` | Stop the DNS service |
+| GET | `/config` | Read MITM configuration |
+| PATCH | `/config` | Update MITM configuration |
+| GET | `/stats` | Module statistics |
+
+### WebApp — `/api/v1/webapp/`
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/scans` | List scans |
+| POST | `/scans` | Start a scan |
+| GET | `/scans/:id` | Scan detail |
+| GET | `/scans/:id/stats` | Scan statistics |
+| GET | `/scans/:id/findings` | Scan findings |
+| DELETE | `/scans/:id` | Cancel a scan |
+| GET | `/checks` | Available scan checks |
+| GET | `/config/defaults` | Default scanner configuration |
+
+### Post-Exploit — `/api/v1/post-exploit/`
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/hashes` | List hash records |
+| POST | `/hashes` | Ingest hash output |
+| PATCH | `/hashes/:id/cracked` | Update cracked-hash state |
+| GET | `/kerberoast/targets` | Kerberoastable targets |
+| POST | `/kerberoast/queue` | Queue Kerberoast work through C2 |
+| GET | `/pivot/surface` | Query pivot/attack surface |
+| POST | `/pivot/paths` | Compute AD attack paths |
+| GET | `/pivot/paths` | Retrieve computed paths |
+| GET | `/pivot/kerberoastable` | Query Kerberoastable accounts |
+| GET | `/pivot/asreproastable` | Query AS-REP-roastable accounts |
+| POST | `/dump` | Queue a secrets-dump workflow through C2 |
+| POST | `/dump/parse` | Parse dump material |
+| GET | `/stats` | Module statistics |
+| GET | `/commands` | Module command capability metadata |
+
+## Module execution boundaries
+
+The backend modules are implemented independently but share the same engagement, target, evidence, finding, session, audit, and event infrastructure.
+
+The current GUI boundary is intentional:
+
+- **Recon:** GUI start/cancel workflow is implemented.
+- **WebApp:** GUI start/cancel workflow is implemented.
+- **C2:** backend/API capability is implemented; no dedicated GUI launcher is currently exposed.
+- **Delivery:** backend/API campaign capability is implemented; no dedicated GUI campaign launcher is currently exposed.
+- **Evil Proxy:** backend/API capability is implemented; no dedicated GUI launcher is currently exposed.
+- **MITM:** backend/API capability is implemented; no dedicated GUI launcher is currently exposed.
+- **Post-Exploit:** backend/API capability is implemented; no dedicated GUI launcher is currently exposed.
+
+The dashboard and module workspaces expose these backend capabilities so they are discoverable without manufacturing controls that do not yet exist.
+
+## Known architectural limits
+
+HECATE is currently a single-operator, single-process platform. It is not intended to provide multi-user IAM.
+
+Current documented limits include:
+
+- C2 replay handling follows the existing encrypted protocol model rather than a separate monotonic sequence/nonce protocol.
+- Application-level append-only controls do not protect against an administrator with direct authority over the SQLite database.
+- MITM DNS spoofing state is process-global even though its API controls are engagement-authorized.
+- Existing browser WebSocket connections are not forcibly terminated solely because the browser session later reaches its TTL.
+- The event bridge currently integrates the shared event bus through the existing singleton architecture.
+
+These are explicit design boundaries rather than claims of capabilities the software does not provide.
 
 ## Architecture
 
 ```
 hecate/
-├── cli/                        Entry point + commands (start, keygen)
+├── cli/                        Entry point + start/keygen commands
 ├── ui/                         React operator console + Vite build
 ├── api/
 │   ├── server.js               Express + HTTP + WebSocket server
-│   ├── router.js               Mounts core + module routes at /api/v1/
-│   ├── middleware/             auth, rate-limit, logger, error-handler
-│   ├── routes/                 Core CRUD (engagements, targets, evidence …)
-│   └── websocket/              ws-server + event-bridge (real-time events)
+│   ├── router.js               Core + module API registration
+│   ├── middleware/             Auth, rate limit, logging, errors
+│   ├── routes/                 Core CRUD and assessment routes
+│   └── websocket/              WebSocket server + event bridge
 ├── core/
-│   ├── db/
-│   │   ├── database.js         SQLite init + base schema (WAL mode)
-│   │   ├── models/             engagement, target, evidence, finding
-│   │   └── queries/            search helpers
-│   ├── crypto/key-manager.js   AES-256-GCM encrypt/decrypt
-│   ├── store/
-│   │   ├── credential-store.js Credentials encrypted at rest
-│   │   └── session-store.js    Operator module sessions
-│   ├── graph/
-│   │   ├── target-graph.js     Directed target relationship graph
-│   │   └── ad-graph.js         Active Directory graph (BloodHound ingest)
-│   ├── audit/audit-log.js      Append-only SHA-256 hash chain
-│   └── events/event-bus.js     EventEmitter singleton (WS bridge)
+│   ├── db/                     SQLite initialization, schema, models, queries
+│   ├── crypto/                 AES-256-GCM key management
+│   ├── store/                  Encrypted credential/session stores
+│   ├── graph/                  Target and Active Directory graphs
+│   ├── audit/                  Append-only SHA-256 audit chain
+│   ├── events/                 Shared event bus
+│   ├── assessment/             Assessment planning/state
+│   └── network/                Shared network profiles
 └── modules/
-    ├── recon/                  Web crawler (RookCrawler evolved)
-    ├── evil-proxy/             Adversary-in-the-middle proxy (Evilginx3-model)
-    ├── c2/                     Command & control (Sliver-model)
-    ├── delivery/               Phishing campaign manager (GoPhish-model)
-    ├── mitm/                   Network interception (Bettercap-model)
-    ├── webapp/                 Web app scanner (FFUF/Nuclei-model)
-    └── post-exploit/           Credential extraction + lateral movement (Impacket-model)
+    ├── recon/                  Web reconnaissance
+    ├── evil-proxy/             Adversary-in-the-middle proxy workflows
+    ├── c2/                     Command-and-control workflows
+    ├── delivery/               Campaign delivery/tracking
+    ├── mitm/                   Network interception
+    ├── webapp/                 Web application assessment
+    └── post-exploit/           Credential/AD post-exploitation workflows
 ```
 
-## Module API reference
+## Testing and regression coverage
 
-### Core resources — `/api/v1/`
+Run the full regression suite:
 
-| Route                                     | Description                      |
-|-------------------------------------------|----------------------------------|
-| `GET/POST /engagements`                   | Engagement CRUD                  |
-| `GET/POST/PATCH/DELETE /targets`          | Target CRUD + search             |
-| `GET/POST /credentials`                   | Credential store (encrypted)     |
-| `GET/POST /sessions`                      | Module session tracking          |
-| `GET/POST /evidence`                      | Evidence records                 |
-| `GET/POST /findings`                      | Vulnerability findings           |
-| `GET /graph/targets/:eid`                 | Target graph (D3)                |
-| `POST /graph/ad/ingest`                   | Ingest BloodHound JSON           |
-| `GET /audit`, `GET /audit/verify`         | Audit log + chain verification   |
-| `GET /api/v1/status`                      | Platform status                  |
+```bash
+npm test
+```
 
-### Recon — `/api/v1/recon/`
+Run the core suite:
 
-| Route                          | Description                      |
-|--------------------------------|----------------------------------|
-| `POST /recon/jobs`             | Start a crawl job                |
-| `GET /recon/jobs/:id/pages`    | Crawled pages                    |
-| `GET /recon/jobs/:id/secrets`  | Discovered secrets               |
-| `DELETE /recon/jobs/:id`       | Cancel job                       |
+```bash
+npm run test:core
+```
 
-### Evil Proxy — `/api/v1/evil-proxy/`
+Run the API suite:
 
-| Route                                        | Description                  |
-|----------------------------------------------|------------------------------|
-| `POST /evil-proxy/lures`                     | Create a phishing lure       |
-| `GET /evil-proxy/sessions`                   | Victim sessions              |
-| `GET /evil-proxy/sessions/:l/:v/export`      | Export harvested session     |
+```bash
+npm run test:api
+```
 
-### C2 — `/api/v1/c2/` + `POST /c2/beacon`
+Run all seven module suites:
 
-| Route                               | Description                         |
-|-------------------------------------|-------------------------------------|
-| `POST /c2/implants`                 | Register implant (returns key once) |
-| `POST /c2/implants/:id/tasks`       | Queue task (shell/upload/die/…)     |
-| `GET /c2/implants/:id/results`      | Task results                        |
-| `POST /c2/beacon`                   | Implant beacon (no auth token)      |
+```bash
+npm run test:modules
+```
 
-### Delivery — `/api/v1/delivery/`
+Run an individual module suite:
 
-| Route                               | Description                  |
-|-------------------------------------|------------------------------|
-| `POST /delivery/campaigns`          | Create campaign              |
-| `POST /delivery/campaigns/:id/targets` | Add targets (CSV or JSON) |
-| `POST /delivery/campaigns/:id/state`| Start/pause/complete         |
-| `GET /delivery/track/open/:tid`     | Public open-tracking pixel |
-| `GET /delivery/track/click/:tid/:lid` | Public click redirect       |
+```bash
+node --experimental-sqlite --test modules/recon/recon.test.js
+```
 
-### MITM — `/api/v1/mitm/`
+The repository also provides:
 
-| Route                       | Description               |
-|-----------------------------|---------------------------|
-| `POST /mitm/dns/rules`      | Add DNS spoof rule        |
-| `POST /mitm/dns/start`      | Start DNS server (port 53)|
-| `GET /mitm/exchanges`       | Intercepted traffic log   |
-| `GET /mitm/credentials`     | Sniffed credentials       |
+```bash
+npm run check:encoding
+npm run build:ui
+```
 
-### Webapp — `/api/v1/webapp/`
+The regression workflow covers core startup/migration/authorization behavior, API lifecycle/authentication, browser sessions, WebSocket policy, all seven module suites, the UI capability surface, and encoding checks. GitHub Actions runs the regression workflow on pushes and pull requests targeting `main`.
 
-| Route                          | Description               |
-|--------------------------------|---------------------------|
-| `POST /webapp/scans`           | Start a scan              |
-| `GET /webapp/scans/:id/findings` | Vulnerability findings  |
+The repository contains a separate Juice Shop end-to-end test command:
 
-### Post-Exploit — `/api/v1/post-exploit/`
+```bash
+npm run test:e2e:juice-shop
+```
 
-| Route                           | Description                          |
-|---------------------------------|--------------------------------------|
-| `POST /post-exploit/hashes`     | Ingest + parse hash output           |
-| `POST /post-exploit/kerberoast/queue` | Queue Kerberoast via C2       |
-| `POST /post-exploit/pivot/paths` | Compute AD attack paths             |
-| `POST /post-exploit/dump`       | Queue secrets dump via C2 implant   |
+That test is not part of the default `npm test` regression command.
 
-## Regression coverage
+## Development note
 
-The repository regression suite covers the core, API, WebSocket, browser-session, and all seven module suites. The test command also validates the UI capability surface and encoding checks. GitHub Actions runs the same regression suite on pushes and pull requests to `main`.
+The README documents implemented repository state, not planned future features. In particular, the presence of a module in the API and capability map does not mean its full GUI control surface is complete.
+
+Runtime credentials, tokens, keys, captured evidence, and client data are intentionally excluded from this documentation.
