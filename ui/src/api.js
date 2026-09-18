@@ -12,6 +12,7 @@ async function request(path, token, options = {}) {
 }
 
 export const api = {
+  logout: () => request('/session/logout', undefined, { method: 'POST' }),
   status: token => request('/status', token),
   engagements: token => request('/engagements', token),
   createEngagement: (payload, token) => request('/engagements', token, { method: 'POST', body: JSON.stringify(payload) }),
