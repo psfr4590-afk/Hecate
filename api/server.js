@@ -21,6 +21,7 @@ const wsServer         = require('./websocket/ws-server');
 const eventBridge      = require('./websocket/event-bridge');
 
 const app = express();
+const publicApiRouter = express.Router();
 app.set('trust proxy', 'loopback');
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
@@ -40,6 +41,11 @@ app.post('/api/v1/session/logout', auth, (req, res) => {
   res.setHeader('Set-Cookie', 'hecate_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0');
   res.status(204).end();
 });
+
+// ── Public API routes ─────────────────────────────────────────────────────────
+// Public routes must be registered before the authenticated API stack. This is
+// used for recipient-facing delivery tracking, which cannot carry an operator token.
+app.use('/api/v1', publicApiRouter);
 
 // ── API routes (authenticated) ────────────────────────────────────────────────
 // Authentication must be mounted on the actual API prefix. Mounting auth at
@@ -72,7 +78,9 @@ app.use(errorHandler);
 let server = null;
 
 function registerPublicRoute(prefix, route) {
-  app.use(prefix, route);
+  const apiPrefix = '/api/v1';
+  if (!prefix.startsWith(apiPrefix + '/')) throw new Error(`Public API route must be under ${apiPrefix}`);
+  publicApiRouter.use(prefix.slice(apiPrefix.length), route);
 }
 
 function start(opts = {}) {
