@@ -4,6 +4,7 @@ const campaignManager = require('./campaign/campaign-manager');
 const sendQueue       = require('./send/send-queue');
 const mailer          = require('./send/mailer');
 const tracker         = require('./tracking/tracker');
+const targetStore     = require('./target/target-store');
 const routes          = require('./api/routes');
 const trackingRoutes  = require('./api/tracking-routes');
 
@@ -14,6 +15,8 @@ function init(deps = {}) {
   const { eventBus, dryRun, db } = deps;
 
   if (!db) throw new Error('Delivery module requires deps.db');
+  targetStore.init(db);
+  campaignManager.init(db);
   sendQueue.init(db);
 
   if (eventBus) {
