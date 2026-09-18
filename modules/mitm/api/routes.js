@@ -104,6 +104,8 @@ router.post('/dns/rules', (req, res, next) => {
     if (net.isIP(spoofIp) !== 4) {
       throw new HecateError('HECATE_BAD_INPUT', `Invalid IPv4 address: ${spoofIp}`);
     }
+    const session = mitmStore.getSession(sessionId);
+    dnsSpoofer.setEngagement(session.engagement_id);
     dnsSpoofer.addEntry(hostname, spoofIp);
     mitmStore.saveDnsRule(sessionId, hostname, spoofIp);
     res.status(201).json({ hostname, spoofIp });
@@ -131,7 +133,7 @@ router.post('/dns/start', async (req, res, next) => {
       return res.json({ ok: true, message: 'DNS spoofer already running' });
     }
     const { port, upstream } = req.body ?? {};
-    await dnsSpoofer.start({ port, upstream });
+    await dnsSpoofer.start({ port, upstream, engagementId: eid });
     res.json({ ok: true });
   } catch (err) { next(err); }
 });
