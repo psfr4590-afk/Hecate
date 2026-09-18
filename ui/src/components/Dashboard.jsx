@@ -23,7 +23,6 @@ const moduleCapabilities = {
 const coreCapabilities = [
   ['Engagements', 'Scope and lifecycle context', 'engagements'],
   ['Targets', 'Asset inventory and search', 'targets'],
-  ['Target graph', 'Relationship mapping', 'graph'],
   ['Evidence', 'Collected assessment records', 'evidence'],
   ['Findings', 'Vulnerability and observation records', 'findings'],
   ['Sessions', 'Module session tracking', 'sessions'],
@@ -69,15 +68,6 @@ export function Dashboard({ data, onNewEngagement, onNavigate, onVerify }) {
           </button>;
         })}</div>
         {!registeredModules.length && <div className="empty">No modules are registered with the local node.</div>}
-      </section>
-        <div className="module-grid">{(data.status?.modules || []).map(name=>{
-          const safeName = String(name);
-          const description = moduleDescriptions[safeName] || 'Registered module';
-          return <button type="button" className="module-card" key={safeName} onClick={()=>onNavigate(`module:${safeName}`)} aria-label={`Open ${safeName} module controls`}>
-            <span className="module-glyph">◇</span><div><strong>{safeName}</strong><small>{description}</small></div><span className="module-state">READY</span>
-          </button>;
-        })}</div>
-        {!(data.status?.modules || []).length && <div className="empty">No modules are registered with the local node.</div>}
       </section>
       <section className="panel panel--wide"><div className="panel-head"><div><span className="eyebrow">RECENT ACTIVITY</span><h2>Audit events</h2></div><button className="text-button" onClick={()=>onNavigate('audit')}>Open audit</button></div>
         <div className="activity-list">{(data.audit||[]).slice(0,8).map((a,i)=><div className="activity-row" key={a.id||i}><span className="activity-line" /><div><strong>{a.action || a.event || 'event'}</strong><small>{a.module || 'core'} · {a.operator_id || a.operatorId || 'operator'}</small></div><time>{formatTime(a.created_at || a.timestamp)}</time></div>)}{!(data.audit||[]).length&&<Empty text="No audit events available."/>}</div>
