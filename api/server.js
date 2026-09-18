@@ -36,6 +36,12 @@ app.post('/c2/beacon', (req, res) => {
   res.status(204).end();
 });
 
+// ── Local browser session logout ─────────────────────────────────────────────
+app.post('/api/session/logout', auth, (req, res) => {
+  res.setHeader('Set-Cookie', 'hecate_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0');
+  res.status(204).end();
+});
+
 // ── API routes (authenticated) ────────────────────────────────────────────────
 // Authentication must be mounted on the actual API prefix. Mounting auth at
 // /api does not automatically protect a separately registered /api/v1 stack.
