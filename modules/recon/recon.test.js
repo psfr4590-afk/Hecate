@@ -342,7 +342,8 @@ describe('Analysis: secret-scanner', () => {
   });
 
   it('detects Stripe key', () => {
-    const body = 'stripe.init("STRIPE_TEST_KEY_PLACEHOLDER")';
+    const syntheticKey = `sk_test_${'A'.repeat(24)}`;
+    const body = `stripe.init("${syntheticKey}")`;
     const r = scan(body, 'test.js');
     assert.ok(r.some(f => f.type === 'stripe-key'));
   });
