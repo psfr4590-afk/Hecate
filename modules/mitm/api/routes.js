@@ -117,6 +117,8 @@ router.delete('/dns/rules/:hostname', (req, res, next) => {
     const sessionId = req.query.session;
     if (!sessionId) throw new HecateError('HECATE_BAD_INPUT', 'session query parameter required');
     requireResource(req, mitmStore.getSession(sessionId), 'MITM session');
+    const session = mitmStore.getSession(sessionId);
+    dnsSpoofer.setEngagement(session.engagement_id);
     dnsSpoofer.removeEntry(req.params.hostname);
     mitmStore.removeDnsRule(req.params.hostname, sessionId);
     res.status(204).end();
