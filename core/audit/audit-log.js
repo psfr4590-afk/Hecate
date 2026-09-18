@@ -2,14 +2,16 @@
 const crypto = require('crypto');
 const db     = () => require('../db/database').get();
 
-function _hash(prev, ts, action, detail) {
-  return crypto.createHash('sha256').update(`${prev}|${ts}|${action}|${detail}`).digest('hex');
+function _hash(prev, ts, action, subject, engagementId, detail) {
+  return crypto.createHash('sha256')
+    .update(`${prev}|${ts}|${action}|${subject ?? ''}|${engagementId ?? ''}|${detail ?? ''}`)
+    .digest('hex');
 }
 
 function append(action, subject, detail, engagementId = null) {
   const prev = db().prepare('SELECT hash FROM audit_log ORDER BY id DESC LIMIT 1').get()?.hash ?? '0';
   const ts   = new Date().toISOString();
-  const hash = _hash(prev, ts, action, String(detail ?? ''));
+  const hash = _hash(prev, ts, action, subject ?? null, engagementId ?? null, String(detail ?? ''));
   db().prepare('INSERT INTO audit_log (ts,action,subject,engagement_id,detail,prev_hash,hash) VALUES (?,?,?,?,?,?,?)')
     .run(ts, action, subject ?? null, engagementId ?? null, detail ?? null, prev, hash);
   return hash;
@@ -33,7 +35,7 @@ function verify() {
   for (let i = 0; i < rows.length; i++) {
     const r    = rows[i];
     const prev = i === 0 ? '0' : rows[i - 1].hash;
-    const expected = _hash(prev, r.ts, r.action, String(r.detail ?? ''));
+    const expected = _hash(prev, r.ts, r.action, r.subject ?? null, r.engagement_id ?? null, String(r.detail ?? ''));
     if (expected !== r.hash) {
       return { valid: false, checked: i + 1, failedAt: r.id, message: `Hash mismatch at row ${r.id}` };
     }
