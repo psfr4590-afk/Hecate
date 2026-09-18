@@ -29,6 +29,6 @@ function init(deps = {}) {
   _initialised = true;
 }
 
-function shutdown() { sendQueue.stop(); }
+function shutdown() { sendQueue.stop(); _initialised = false; }
 
 module.exports = { init, shutdown, routes };
