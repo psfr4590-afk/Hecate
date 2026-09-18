@@ -16,6 +16,7 @@ const auth             = require('./middleware/auth');
 const rateLimit        = require('./middleware/rate-limit');
 const logger           = require('./middleware/logger');
 const { errorHandler } = require('./middleware/error-handler');
+const auth = require('./middleware/auth');
 const apiRouter        = require('./router');
 const wsServer         = require('./websocket/ws-server');
 const eventBridge      = require('./websocket/event-bridge');
@@ -53,7 +54,10 @@ app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString
 
 app.get('/', (req, res, next) => {
   const index = path.join(uiDist, 'index.html');
-  if (fs.existsSync(index)) return res.sendFile(index);
+  if (fs.existsSync(index)) {
+    res.setHeader('Set-Cookie', auth.sessionSetCookieHeader());
+    return res.sendFile(index);
+  }
   next();
 });
 
