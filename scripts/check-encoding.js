@@ -21,18 +21,18 @@ const TEXT_EXTENSIONS = new Set([
 // Keep the detector's own source ASCII-only so it cannot flag its marker table.
 // The escape sequences below produce the Unicode characters at runtime.
 const MOJIBAKE_MARKERS = [
-  '\\uFFFD',
-  '\\u00C3',
-  '\\u00C2',
-  '\\u00E2\\u20AC',
-  '\\u00E2\\u20AC\\u2122',
-  '\\u00E2\\u20AC\\u0153',
-  '\\u00E2\\u20AC\\uFFFD',
-  '\\u00E2\\u20AC\\u2013',
-  '\\u00E2\\u20AC\\u2014',
-  '\\u00E2\\u20AC\\u2026',
-  '\\u00E2\\u2020',
-  '\\u00E2\\u0153',
+  '\uFFFD',
+  '\u00C3',
+  '\u00C2',
+  '\u00E2\u20AC',
+  '\u00E2\u20AC\u2122',
+  '\u00E2\u20AC\u0153',
+  '\u00E2\u20AC\uFFFD',
+  '\u00E2\u20AC\u2013',
+  '\u00E2\u20AC\u2014',
+  '\u00E2\u20AC\u2026',
+  '\u00E2\u2020',
+  '\u00E2\u0153',
 ];
 
 const failures = [];
