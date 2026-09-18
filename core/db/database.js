@@ -201,7 +201,10 @@ function init(opts = {}) {
   // the configured local operator so the new boundary is explicit rather
   // than silently treating legacy rows as globally accessible.
   const defaultOperator = OPERATOR_ID;
-  try { _db.exec("ALTER TABLE audit_log ADD COLUMN engagement_id TEXT"); } catch {}
+  const auditColumns = _db.prepare('PRAGMA table_info(audit_log)').all();
+  if (!auditColumns.some(column => column.name === 'engagement_id')) {
+    _db.exec('ALTER TABLE audit_log ADD COLUMN engagement_id TEXT');
+  }
 
   _db.prepare(`
     INSERT OR IGNORE INTO engagement_operators (engagement_id, operator_id, role)
