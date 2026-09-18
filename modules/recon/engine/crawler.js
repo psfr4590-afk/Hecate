@@ -114,6 +114,10 @@ function list() {
   return [...activeJobs.keys()];
 }
 
+async function shutdown() {
+  for (const jobId of [...activeJobs.keys()]) cancel(jobId);
+}
+
 // ── Job runner ────────────────────────────────────────────────────────────────
 
 async function _runJob(jobId, frontier, cancelToken, config, rateLimiter) {
