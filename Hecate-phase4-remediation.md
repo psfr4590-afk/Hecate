@@ -36,15 +36,6 @@ Phase 4 added coverage for:
 - rejection of WebSocket query-string token authentication;
 - header-based WebSocket authentication extraction.
 
-## Current application relationship
-
-The Phase 4 authentication changes remain part of the current application.
-
-The current local console is served by the same HECATE process and authenticates through an HttpOnly, SameSite browser session cookie. Programmatic API clients can use the configured bearer token or `X-Hecate-Token` header.
-
-The current console provides workspaces for Dashboard, Engagements, Targets, Findings, Evidence, Sessions, and Audit Log. Module cards are presented from the live module registration status. Only Recon and Web Application Assessment currently expose active launch controls in the console; the other registered modules remain API-backed without dedicated UI launch controls.
-
-The current application is intentionally single-operator and local-first. It is not a multi-operator IAM system.
 
 ## Explicitly not changed
 
