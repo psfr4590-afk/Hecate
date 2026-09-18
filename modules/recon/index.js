@@ -44,6 +44,7 @@ module.exports = {
   start:  crawler.start.bind(crawler),
   cancel: crawler.cancel.bind(crawler),
   list:   crawler.list.bind(crawler),
+  shutdown: crawler.shutdown.bind(crawler),
   routes,           // Express Router — mount at /api/v1/recon
   DEFAULT_CONFIG: crawler.DEFAULT_CONFIG,
 };
