@@ -58,9 +58,18 @@ async function beaconMiddleware(req, res) {
   const implantId = req.headers['x-agent-id'];
   if (!implantId) return res.status(204).end();
 
-  let rawBody = '';
-  req.on('data', c => { rawBody += c; });
-  await new Promise(r => req.on('end', r));
+  let rawBody;
+  if (req._hecateRawBody) {
+    rawBody = req._hecateRawBody.toString('utf8');
+  } else {
+    const chunks = [];
+    req.on('data', c => chunks.push(Buffer.from(c)));
+    await new Promise((resolve, reject) => {
+      req.on('end', resolve);
+      req.on('error', reject);
+    });
+    rawBody = Buffer.concat(chunks).toString('utf8');
+  }
 
   const { status, body } = await beaconHandler.handle({
     implantId,
