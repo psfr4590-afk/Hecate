@@ -24,6 +24,37 @@ node --experimental-sqlite cli/index.js start
 
 Platform is now listening at `http://127.0.0.1:7331`.
 
+## Assessment architecture
+
+HECATE separates assessment planning from individual capability modules.
+
+```
+Assessment
+  ├── Scope / engagement context
+  ├── Target inventory
+  ├── Target classification
+  ├── Attack-surface discovery
+  ├── Network / traffic profile
+  ├── Applicable test cases
+  ├── Execution / observations
+  ├── Evidence
+  ├── Findings
+  ├── Retest / validation
+  └── Audit trail
+```
+
+Targets are generic assessment assets rather than module-specific objects. A target may represent an application, API, host, service, identity boundary, wallet/custody component, smart contract, RPC endpoint, or other asset.
+
+Target priority is derived from data sensitivity and business criticality. The combined value is a planning signal, not a vulnerability score.
+
+Shared network profiles provide consistent assessment traffic behavior across modules, including assessment mode, concurrency, pacing, bounded retries/backoff, connection reuse, and explicit proxy/tunnel/DNS route metadata.
+
+## Runtime-data isolation
+
+Real engagement data stays outside the Git repository. Runtime databases, WAL/SHM files, evidence, logs, coverage, generated UI output, operator keys, environment files, certificates, and private keys are ignored.
+
+Use synthetic fixtures for repository tests. Never commit real target credentials, tokens, session material, wallet seeds/private keys, captured evidence, or client runtime databases.
+
 ## Operator console
 
 The React operator console is built once and served by the same local HECATE process.
