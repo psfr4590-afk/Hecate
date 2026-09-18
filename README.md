@@ -16,9 +16,9 @@ HECATE currently contains a working local platform with:
 - Browser sessions with signed, HttpOnly, SameSite=Strict cookies and an eight-hour session lifetime.
 - Public recipient-facing Delivery tracking endpoints, kept separate from authenticated operator routes.
 - Regression coverage for core, API, WebSocket, browser-session, all seven module suites, UI capability-surface checks, and encoding checks.
-- A dashboard that exposes the complete registered capability surface without pretending that every backend capability already has a dedicated GUI control.
+- A dashboard and dedicated module workspaces with active GUI control surfaces for all seven registered modules.
 
-The current console provides active execution controls for **Recon** and **WebApp**. The other five modules are currently exposed through capability inventories and their real API surfaces rather than through fabricated or incomplete GUI launchers.
+The seven module workspaces now expose controls against their existing APIs. Recon and WebApp retain their target execution/cancellation controls; C2, Delivery, Evil Proxy, MITM, and Post-Exploit expose their implemented provisioning, queue, session, campaign, DNS, evidence, and analysis operations without adding new backend capabilities.
 
 ## Requirements
 
@@ -156,7 +156,7 @@ http://127.0.0.1:7331/
 
 The local node issues a process-scoped browser session cookie. The API token is not copied into browser storage.
 
-The dashboard exposes the core control plane plus all seven registered modules. Module workspaces show the implemented capability and API surface. Recon and WebApp additionally expose active run/cancel controls in the current console.
+The dashboard exposes the core control plane plus all seven registered modules. Every module workspace now provides an operator control panel backed by the module's existing API surface, with engagement scope and existing authorization preserved.
 
 For UI development with hot reload:
 
@@ -384,17 +384,17 @@ Public recipient tracking:
 
 The backend modules are implemented independently but share the same engagement, target, evidence, finding, session, audit, and event infrastructure.
 
-The current GUI boundary is intentional:
+All seven module workspaces now have real operator control panels wired to existing backend routes:
 
-- **Recon:** GUI start/cancel workflow is implemented.
-- **WebApp:** GUI start/cancel workflow is implemented.
-- **C2:** backend/API capability is implemented; no dedicated GUI launcher is currently exposed.
-- **Delivery:** backend/API campaign capability is implemented; no dedicated GUI campaign launcher is currently exposed.
-- **Evil Proxy:** backend/API capability is implemented; no dedicated GUI launcher is currently exposed.
-- **MITM:** backend/API capability is implemented; no dedicated GUI launcher is currently exposed.
-- **Post-Exploit:** backend/API capability is implemented; no dedicated GUI launcher is currently exposed.
+- **Recon:** target selection, private-target policy, start, and cancellation.
+- **WebApp:** target selection, private-target policy, start, and cancellation.
+- **C2:** implant provisioning, implant selection, supported task queueing, result retrieval, and implant termination.
+- **Delivery:** campaign creation, target import, campaign state transitions, statistics, and SMTP-profile management.
+- **Evil Proxy:** phishlet/lure creation and disablement, victim-session inspection, and harvested-session export.
+- **MITM:** interception-session creation/stop, DNS service control, DNS rule creation, and traffic/credential retrieval.
+- **Post-Exploit:** hash ingestion, Kerberoast task queueing, dump-task queueing, AD attack-path computation, and path retrieval.
 
-The dashboard and module workspaces expose these backend capabilities so they are discoverable without manufacturing controls that do not yet exist.
+These panels are control surfaces over capabilities that already existed in the backend. No new execution primitive was added merely to populate the GUI. Existing engagement authorization remains enforced by the API.
 
 ## Known architectural limits
 
@@ -492,6 +492,6 @@ That test is not part of the default `npm test` regression command.
 
 ## Development note
 
-The README documents implemented repository state, not planned future features. In particular, the presence of a module in the API and capability map does not mean its full GUI control surface is complete.
+The README documents implemented repository state, not planned future features. The module capability map and GUI control panels are intended to reflect the current backend/API contract rather than speculative functionality.
 
 Runtime credentials, tokens, keys, captured evidence, and client data are intentionally excluded from this documentation.
