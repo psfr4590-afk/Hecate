@@ -1,9 +1,16 @@
 const BASE = '/api/v1';
 
-async function request(path, token, options = {}) {
-  const headers = { Accept: 'application/json', ...(options.body ? { 'Content-Type': 'application/json' } : {}) };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const response = await fetch(`${BASE}${path}`, { credentials: 'same-origin', ...options, headers: { ...headers, ...(options.headers || {}) } });
+async function request(path, options = {}) {
+  const headers = {
+    Accept: 'application/json',
+    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+    ...(options.headers || {}),
+  };
+  const response = await fetch(`${BASE}${path}`, {
+    credentials: 'same-origin',
+    ...options,
+    headers,
+  });
   const text = await response.text();
   let body = {};
   try { body = text ? JSON.parse(text) : {}; } catch { body = { error: { message: text } }; }
@@ -12,18 +19,14 @@ async function request(path, token, options = {}) {
 }
 
 export const api = {
-  logout: () => request('/session/logout', undefined, { method: 'POST' }),
-  status: token => request('/status', token),
-  engagements: token => request('/engagements', token),
-  createEngagement: (payload, token) => request('/engagements', token, { method: 'POST', body: JSON.stringify(payload) }),
-  targets: (eid, token) => request(`/targets/engagement/${encodeURIComponent(eid)}`, token),
-  findings: (eid, token) => request(`/findings/engagement/${encodeURIComponent(eid)}`, token),
-  evidence: (eid, token) => request(`/evidence/engagement/${encodeURIComponent(eid)}`, token),
-  sessions: (eid, token) => request(`/sessions/engagement/${encodeURIComponent(eid)}`, token),
-  audit: (eid, token) => request(`/audit?engagementId=${encodeURIComponent(eid)}&limit=50`, token),
-  verifyAudit: token => request('/audit/verify', token),
+  logout: () => request('/session/logout', { method: 'POST' }),
+  status: () => request('/status'),
+  engagements: () => request('/engagements'),
+  createEngagement: payload => request('/engagements', { method: 'POST', body: JSON.stringify(payload) }),
+  targets: eid => request(`/targets/engagement/${encodeURIComponent(eid)}`),
+  findings: eid => request(`/findings/engagement/${encodeURIComponent(eid)}`),
+  evidence: eid => request(`/evidence/engagement/${encodeURIComponent(eid)}`),
+  sessions: eid => request(`/sessions/engagement/${encodeURIComponent(eid)}`),
+  audit: eid => request(`/audit?engagementId=${encodeURIComponent(eid)}&limit=50`),
+  verifyAudit: () => request('/audit/verify'),
 };
-
-const KEY = 'hecate.api.token';
-export const getSavedToken = () => sessionStorage.getItem(KEY) || '';
-export const saveToken = token => token ? sessionStorage.setItem(KEY, token) : sessionStorage.removeItem(KEY);
