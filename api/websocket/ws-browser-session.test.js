@@ -38,8 +38,8 @@ describe('WebSocket: local browser session', () => {
       ws.on('message', raw => {
         const msg = JSON.parse(raw);
         if (msg.type === 'hecate:connected') {
+          ws.once('close', resolve);
           ws.close();
-          resolve();
         }
       });
       ws.on('error', reject);
