@@ -140,17 +140,23 @@ cmd
     log('info', `API base — http://${host}:${port}/api/v1/`);
 
     // ── Signal handling ───────────────────────────────────────────────────────
+    let shuttingDown = false;
     async function shutdown(sig) {
+      if (shuttingDown) return;
+      shuttingDown = true;
       log('info', `${sig} — shutting down`);
       try {
+        // Stop producers/workers before closing the transports or database.
+        await Promise.all([
+          Promise.resolve(recon.shutdown?.()),
+          Promise.resolve(webapp.shutdown?.()),
+          Promise.resolve(delivery.shutdown?.()),
+          Promise.resolve(c2.shutdown?.()),
+          Promise.resolve(evilProxy.shutdown?.()),
+          Promise.resolve(mitm.shutdown?.()),
+          Promise.resolve(postExploit.shutdown?.()),
+        ]);
         await server.stop();
-        recon.shutdown?.();
-        webapp.shutdown?.();
-        delivery.shutdown?.();
-        c2.shutdown?.();
-        evilProxy.shutdown?.();
-        mitm.shutdown?.();
-        postExploit.shutdown?.();
         KeyManager.clear();
         Database.close();
       } catch (err) { process.stderr.write(`Shutdown error: ${err.message}\n`); }
