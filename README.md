@@ -65,7 +65,7 @@ npm run build:ui
 npm start
 ```
 
-Open `http://127.0.0.1:7331/`. The console keeps the API token in browser `sessionStorage`, so closing the browser session clears it.
+Open `http://127.0.0.1:7331/`. The local node issues a process-scoped browser session cookie; the API token is not copied into browser storage.
 
 For UI development with hot reload:
 
