@@ -96,8 +96,10 @@ function start(opts = {}) {
     eventBridge.start();
     server.on('error', reject);
     server.listen(port, host, () => {
-      process.stdout.write(JSON.stringify({ ts: new Date().toISOString(), event: 'hecate:start', host, port, pid: process.pid }) + '\n');
-      resolve({ host, port });
+      const address = server.address();
+      const boundPort = typeof address === 'object' && address ? address.port : port;
+      process.stdout.write(JSON.stringify({ ts: new Date().toISOString(), event: 'hecate:start', host, port: boundPort, pid: process.pid }) + '\n');
+      resolve({ host, port: boundPort });
     });
   });
 }
