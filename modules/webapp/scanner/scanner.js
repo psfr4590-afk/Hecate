@@ -34,6 +34,7 @@ const DEFAULT_CONFIG = {
   scope:          'path',           // path | host | domain
   allowPrivateTargets: false,
   maxRedirects:   5,
+  maxRequests:    5000,
 };
 
 /**
@@ -56,12 +57,13 @@ async function start(opts) {
   const cancel = { cancelled: false };
 
   webappStore.createScan({ id: scanId, engagementId, targetId, targetUrl, config });
-  activeScans.set(scanId, { cancel, config, engagementId });
+  activeScans.set(scanId, { cancel, config, engagementId, done: null });
 
   // Run async — don't await
-  _runScan(scanId, targetUrl, config, cancel, engagementId).catch(err => {
+  const done = _runScan(scanId, targetUrl, config, cancel, engagementId).catch(err => {
     webappStore.failScan(scanId, err.message);
   });
+  activeScans.get(scanId).done = done;
 
   return scanId;
 }
@@ -78,7 +80,10 @@ function cancelScan(scanId) {
 function listActive() { return [...activeScans.keys()]; }
 
 async function shutdown() {
-  for (const scanId of [...activeScans.keys()]) cancelScan(scanId);
+  const scans = [...activeScans.values()];
+  for (const scan of scans) scan.cancel.cancelled = true;
+  await Promise.all(scans.map(scan => scan.done).filter(Boolean));
+  for (const scanId of [...activeScans.keys()]) activeScans.delete(scanId);
 }
 
 // ── Scan runner ───────────────────────────────────────────────────────────────
@@ -116,6 +121,9 @@ async function _runScan(scanId, targetUrl, config, cancel, engagementId) {
     const b = await _fetch(`${targetUrl.replace(/\/$/, '')}/hecate-baseline-404-${randomUUID()}`, config);
     baseline = { status: b.status, bodyLength: b.body?.length ?? 0 };
   } catch { /* ignore */ }
+
+  const maxRequests = Math.max(1, Number(config.maxRequests) || 1);
+  if (all.length > maxRequests) all.length = maxRequests;
 
   // Worker pool
   const queue  = [...all];
