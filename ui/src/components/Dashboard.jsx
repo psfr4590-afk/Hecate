@@ -1,5 +1,14 @@
 function metric(label,value,sub){return <div className="metric"><span>{label}</span><strong>{value}</strong><small>{sub}</small></div>}
 function severityCounts(findings){return ['critical','high','medium','low','info'].map(s=>[s,findings.filter(f=>f.severity===s).length]);}
+const moduleDescriptions = {
+  c2: 'Command and control',
+  delivery: 'Campaign delivery',
+  'evil-proxy': 'Adversary-in-the-middle proxy',
+  mitm: 'Network interception',
+  'post-exploit': 'Post-exploitation',
+  recon: 'Reconnaissance and discovery',
+  webapp: 'Web application assessment',
+};
 export function Dashboard({ data, onNewEngagement, onNavigate, onVerify }) {
   const findings=data.findings??[], active=(data.sessions??[]).filter(s=>s.status==='active').length;
   return <div className="page">
@@ -13,8 +22,15 @@ export function Dashboard({ data, onNewEngagement, onNavigate, onVerify }) {
       <section className="panel"><div className="panel-head"><div><span className="eyebrow">INTEGRITY</span><h2>Audit chain</h2></div><button className="text-button" onClick={onVerify}>Verify</button></div>
         <div className={`integrity integrity--${data.integrity?.state || 'unverified'}`}><div className="integrity-orb" /><strong>{data.integrity?.state === 'valid' ? 'CHAIN VERIFIED' : data.integrity?.state === 'invalid' ? 'VERIFICATION FAILED' : 'UNVERIFIED'}</strong><span>{data.integrity?.tip || 'Verification has not been run.'}</span></div>
       </section>
-      <section className="panel panel--wide"><div className="panel-head"><div><span className="eyebrow">MODULES</span><h2>Platform surface</h2></div></div>
-        <div className="module-grid">{(data.status?.modules || []).map(name=><article className="module-card" key={name}><span className="module-glyph">◇</span><div><strong>{name}</strong><small>registered module</small></div><span className="module-state">READY</span></article>)}</div>
+      <section className="panel panel--wide"><div className="panel-head"><div><span className="eyebrow">MODULES</span><h2>Platform surface</h2></div><span className="panel-hint">Select a ready module to open its operator controls.</span></div>
+        <div className="module-grid">{(data.status?.modules || []).map(name=>{
+          const safeName = String(name);
+          const description = moduleDescriptions[safeName] || 'Registered module';
+          return <button type="button" className="module-card" key={safeName} onClick={()=>onNavigate(`module:${safeName}`} )} aria-label={`Open ${safeName} module controls`}>
+            <span className="module-glyph">◇</span><div><strong>{safeName}</strong><small>{description}</small></div><span className="module-state">READY</span>
+          </button>;
+        })}</div>
+        {!(data.status?.modules || []).length && <div className="empty">No modules are registered with the local node.</div>}
       </section>
       <section className="panel panel--wide"><div className="panel-head"><div><span className="eyebrow">RECENT ACTIVITY</span><h2>Audit events</h2></div><button className="text-button" onClick={()=>onNavigate('audit')}>Open audit</button></div>
         <div className="activity-list">{(data.audit||[]).slice(0,8).map((a,i)=><div className="activity-row" key={a.id||i}><span className="activity-line" /><div><strong>{a.action || a.event || 'event'}</strong><small>{a.module || 'core'} · {a.operator_id || a.operatorId || 'operator'}</small></div><time>{formatTime(a.created_at || a.timestamp)}</time></div>)}{!(data.audit||[]).length&&<Empty text="No audit events available."/>}</div>
