@@ -1,0 +1,14 @@
+# Keep repository text files UTF-8 and normalize line endings.
+* text=auto eol=lf
+
+*.js text working-tree-encoding=UTF-8
+*.jsx text working-tree-encoding=UTF-8
+*.json text working-tree-encoding=UTF-8
+*.css text working-tree-encoding=UTF-8
+*.html text working-tree-encoding=UTF-8
+*.md text working-tree-encoding=UTF-8
+*.yml text working-tree-encoding=UTF-8
+*.yaml text working-tree-encoding=UTF-8
+
+*.ps1 text working-tree-encoding=UTF-8
+*.bat text working-tree-encoding=UTF-8
