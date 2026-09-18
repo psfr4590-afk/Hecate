@@ -14,8 +14,9 @@ const router = Router();
 
 router.get('/scans', (req, res, next) => {
   try {
-    const engagementId = req.query.eid ?? null;
-    if (engagementId) requireEngagement(req, engagementId);
+    const engagementId = req.query.eid;
+    if (!engagementId) throw new HecateError('HECATE_BAD_INPUT', 'eid required');
+    requireEngagement(req, engagementId);
     res.json({ scans: webappStore.listScans(engagementId) });
   } catch (err) { next(err); }
 });
