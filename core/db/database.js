@@ -17,7 +17,7 @@ let _db = null;
 const BASE_SCHEMA = `
   PRAGMA journal_mode = WAL;
   PRAGMA foreign_keys = ON;
-  PRAGMA synchronous   = NORMAL;
+  PRAGMA synchronous   = FULL;
 
   CREATE TABLE IF NOT EXISTS engagements (
     id          TEXT PRIMARY KEY,
