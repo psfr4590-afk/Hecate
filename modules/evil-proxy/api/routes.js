@@ -19,8 +19,9 @@ const router = Router();
 // GET /evil-proxy/lures?eid=
 router.get('/lures', (req, res, next) => {
   try {
-    const engagementId = req.query.eid ?? null;
-    if (engagementId) requireEngagement(req, engagementId);
+    const engagementId = req.query.eid;
+    if (!engagementId) throw new HecateError('HECATE_BAD_INPUT', 'eid required');
+    requireEngagement(req, engagementId);
     const lures = phishletStore.listLures(engagementId);
     res.json({ lures: lures.map(safeLure), total: lures.length });
   } catch (err) { next(err); }
