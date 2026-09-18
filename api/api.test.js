@@ -468,7 +468,12 @@ describe('Routes: audit', () => {
     range:  (from, to) => [],
     verify: ()         => ({ valid: true, checked: 3 }),
   };
+  const Engagement = {
+    findById: (id) => id === 'e1' ? { id: 'e1', ownerOperatorId: 'local-operator' } : null,
+    isOperatorMember: (id, operatorId) => id === 'e1' && operatorId === 'local-operator',
+  };
   mockModule('core/audit/audit-log', AuditLog);
+  mockModule('core/db/models/engagement', Engagement);
 
   const auditRouter = require('./routes/audit');
   let app, srv;
@@ -518,14 +523,16 @@ describe('WebSocket: ws-server', () => {
     await new Promise(r => srv.listen(0, '127.0.0.1', r));
   });
 
-  after(() => {
-    wsServer.close();
-    srv.close();
+  after(async () => {
+    await wsServer.close();
+    await new Promise(resolve => srv.close(resolve));
   });
 
   it('accepts client connection', async () => {
     const addr = srv.address();
-    const ws   = new wsLib(`ws://127.0.0.1:${addr.port}`);
+    const ws   = new wsLib(`ws://127.0.0.1:${addr.port}`, {
+      headers: { 'X-Hecate-Token': process.env.HECATE_API_TOKEN },
+    });
     await new Promise((resolve, reject) => {
       ws.on('message', (raw) => {
         const msg = JSON.parse(raw);
