@@ -72,7 +72,8 @@ router.delete('/lures/:id', (req, res, next) => {
 router.get('/sessions', (req, res, next) => {
   try {
     const { eid, lureId, state } = req.query;
-    if (eid) requireEngagement(req, eid);
+    if (!eid) throw new HecateError('HECATE_BAD_INPUT', 'eid required');
+    requireEngagement(req, eid);
     if (lureId) requireResource(req, phishletStore.getLure(lureId), 'Lure');
     const sessions = sessionMonitor.list({
       engagementId: eid, lureId, state
