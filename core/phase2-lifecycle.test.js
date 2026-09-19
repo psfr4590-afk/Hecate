@@ -25,7 +25,7 @@ test('Phase 2 lifecycle persists one engagement lineage through audit', () => {
   const evidenceId = Evidence.create({ engagementId: eid, type: 'observation', module: 'recon', targetId: tid, label: 'test evidence', data: 'bounded test data' });
   const findingId = Finding.create({ engagementId: eid, title: 'Phase 2 test finding', severity: 'low', module: 'recon', targetId: tid, description: 'test', recommendation: 'test' });
 
-  for (const row of [Engagement.findById(eid), Target.findByIdForEngagement(tid,eid), SessionStore.findByIdForEngagement(sid,eid), Evidence.findByIdForEngagement(evidenceId,eid), Finding.findByIdForEngagement(findingId,eid)]) assert.equal(row.engagement_id, eid);
+  assert.equal(Engagement.findById(eid).id, eid);\n  for (const row of [Target.findByIdForEngagement(tid,eid), SessionStore.findByIdForEngagement(sid,eid), Evidence.findByIdForEngagement(evidenceId,eid), Finding.findByIdForEngagement(findingId,eid)]) assert.equal(row.engagement_id, eid);
   const audit = Database.get().prepare('SELECT action,subject,engagement_id FROM audit_log WHERE engagement_id=? ORDER BY id ASC').all(eid);
   assert.deepEqual(audit.map(x => x.action), ['engagement:created','target:created','session:created','evidence:created','finding:created']);
   assert.ok(audit.every(x => x.engagement_id === eid));
