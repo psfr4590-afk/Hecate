@@ -78,6 +78,11 @@ const BASE_SCHEMA = `
     description    TEXT,
     recommendation TEXT,
     cvss           REAL,
+    status         TEXT NOT NULL DEFAULT 'open',
+    remediation_owner TEXT,
+    remediation_due_at TEXT,
+    resolution     TEXT,
+    updated_at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
     created_at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
     FOREIGN KEY (engagement_id) REFERENCES engagements(id) ON DELETE CASCADE
   );
@@ -244,7 +249,7 @@ function init(opts = {}) {
   ensureColumn('findings', 'remediation_owner', 'TEXT');
   ensureColumn('findings', 'remediation_due_at', 'TEXT');
   ensureColumn('findings', 'resolution', 'TEXT');
-  ensureColumn('findings', 'updated_at', "TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))");
+  ensureColumn('findings', 'updated_at', 'TEXT');
 
   _db.prepare(`
     INSERT OR IGNORE INTO engagement_operators (engagement_id, operator_id, role, created_at)
