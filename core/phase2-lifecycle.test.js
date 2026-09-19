@@ -12,8 +12,8 @@ const Engagement = require('./db/models/engagement');
 const Target = require('./db/models/target');
 const Evidence = require('./db/models/evidence');
 const Finding = require('./db/models/finding');
-const SessionStore = require('../store/session-store');
-const AuditLog = require('../audit/audit-log');
+const SessionStore = require('./store/session-store');
+const AuditLog = require('./audit/audit-log');
 
 before(() => Database.init({ path: DB_PATH }));
 after(() => { try { Database.close(); } catch {} for (const s of ['', '-wal', '-shm']) try { fs.unlinkSync(DB_PATH+s); } catch {} });
