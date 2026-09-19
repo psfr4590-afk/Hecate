@@ -14,9 +14,10 @@ const Evidence = require('./db/models/evidence');
 const Finding = require('./db/models/finding');
 const SessionStore = require('./store/session-store');
 const AuditLog = require('./audit/audit-log');
+const eventBridge = require('../api/websocket/event-bridge');
 
-before(() => Database.init({ path: DB_PATH }));
-after(() => { try { Database.close(); } catch {} for (const s of ['', '-wal', '-shm']) try { fs.unlinkSync(DB_PATH+s); } catch {} });
+before(() => { Database.init({ path: DB_PATH }); eventBridge.start(); });
+after(() => { try { eventBridge.stop(); } catch {} try { Database.close(); } catch {} for (const s of ['', '-wal', '-shm']) try { fs.unlinkSync(DB_PATH+s); } catch {} });
 
 test('Phase 2 lifecycle persists one engagement lineage through audit', () => {
   const eid = Engagement.create({ name: 'Phase 2 lifecycle', ownerOperatorId: 'local-operator' });
