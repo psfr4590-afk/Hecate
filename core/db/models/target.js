@@ -1,40 +1,11 @@
 'use strict';
-const { randomUUID } = require('crypto');
-const db = () => require('../database').get();
-
-function findById(id) {
-  return db().prepare('SELECT * FROM targets WHERE id=?').get(id) ?? null;
-}
-function findByIdForEngagement(id, engagementId) {
-  return db().prepare('SELECT * FROM targets WHERE id=? AND engagement_id=?').get(id, engagementId) ?? null;
-}
-function findByEngagement(eid) {
-  return db().prepare('SELECT * FROM targets WHERE engagement_id=? ORDER BY created_at DESC').all(eid);
-}
-function upsert({ engagementId, type, value, label, metadata }) {
-  const ex = db().prepare('SELECT id FROM targets WHERE engagement_id=? AND type=? AND value=?').get(engagementId, type, value);
-  if (ex) {
-    db().prepare("UPDATE targets SET label=?,metadata=?,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?")
-      .run(label ?? null, metadata ?? null, ex.id);
-    return ex.id;
-  }
-  const id = randomUUID();
-  db().prepare('INSERT INTO targets (id,engagement_id,type,value,label,metadata) VALUES (?,?,?,?,?,?)')
-    .run(id, engagementId, type, value, label ?? null, metadata ?? null);
-  return id;
-}
-function updateForEngagement(id, engagementId, { label, metadata, status }) {
-  return db().prepare("UPDATE targets SET label=?,metadata=?,status=?,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=? AND engagement_id=?")
-    .run(label ?? null, metadata ?? null, status ?? 'active', id, engagementId);
-}
-function update(id, { label, metadata, status }) {
-  db().prepare("UPDATE targets SET label=?,metadata=?,status=?,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?")
-    .run(label ?? null, metadata ?? null, status ?? 'active', id);
-}
-function removeForEngagement(id, engagementId) {
-  return db().prepare('DELETE FROM targets WHERE id=? AND engagement_id=?').run(id, engagementId);
-}
-function remove(id) {
-  db().prepare('DELETE FROM targets WHERE id=?').run(id);
-}
-module.exports = { findById, findByIdForEngagement, findByEngagement, upsert, update, updateForEngagement, remove, removeForEngagement };
+const { randomUUID }=require('crypto'); const db=()=>require('../database').get(); const eventBus=require('../../events/event-bus');
+function findById(id){return db().prepare('SELECT * FROM targets WHERE id=?').get(id)??null;}
+function findByIdForEngagement(id,eid){return db().prepare('SELECT * FROM targets WHERE id=? AND engagement_id=?').get(id,eid)??null;}
+function findByEngagement(eid){return db().prepare('SELECT * FROM targets WHERE engagement_id=? ORDER BY created_at DESC').all(eid);}
+function upsert({engagementId,type,value,label,metadata}){const ex=db().prepare('SELECT id FROM targets WHERE engagement_id=? AND type=? AND value=?').get(engagementId,type,value); if(ex){db().prepare("UPDATE targets SET label=?,metadata=?,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?").run(label??null,metadata??null,ex.id); eventBus.emit('target:updated',{engagementId,subject:ex.id,targetId:ex.id,type,value}); return ex.id;} const id=randomUUID(); db().prepare('INSERT INTO targets (id,engagement_id,type,value,label,metadata) VALUES (?,?,?,?,?,?)').run(id,engagementId,type,value,label??null,metadata??null); eventBus.emit('target:created',{engagementId,subject:id,targetId:id,type,value,label}); return id;}
+function updateForEngagement(id,eid,{label,metadata,status}){const r=db().prepare("UPDATE targets SET label=?,metadata=?,status=?,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=? AND engagement_id=?").run(label??null,metadata??null,status??'active',id,eid); if(r.changes) eventBus.emit('target:updated',{engagementId:eid,subject:id,targetId:id}); return r;}
+function update(id,fields){return updateForEngagement(id,findById(id)?.engagement_id,fields);}
+function removeForEngagement(id,eid){const r=db().prepare('DELETE FROM targets WHERE id=? AND engagement_id=?').run(id,eid); if(r.changes)eventBus.emit('target:deleted',{engagementId:eid,subject:id,targetId:id}); return r;}
+function remove(id){const row=findById(id); return removeForEngagement(id,row?.engagement_id);}
+module.exports={findById,findByIdForEngagement,findByEngagement,upsert,update,updateForEngagement,remove,removeForEngagement};

@@ -51,3 +51,10 @@ Local runtime execution is intentionally not represented as completed unless it 
 ## Explicit boundary
 
 Phase 1 does not attempt to make HECATE equivalent to mature commercial offensive-security platforms. It establishes the dependable foundation required to deepen the existing seven modules, unify the operator workflow, and add professional reporting in later phases.
+
+
+## Phase 2 handoff
+
+Phase 2 extends the foundation into a unified engagement lifecycle. Core engagement, target, session, evidence, and finding mutations now emit bounded lifecycle events carrying the engagement identity and resource subject. Those events are projected into the existing append-only audit chain by the Phase 1 event bridge. A dedicated regression suite verifies creation order, engagement lineage, audit projection, hash-chain integrity, and recovery after database restart.
+
+Phase 2 does not introduce new attack primitives or alter secret material. Its purpose is to make the existing platform's operational records form one traceable lifecycle rather than disconnected CRUD resources.
