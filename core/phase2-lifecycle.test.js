@@ -7,11 +7,11 @@ const os = require('os');
 const path = require('path');
 
 const DB_PATH = path.join(os.tmpdir(), `hecate-phase2-${process.pid}-${Date.now()}.db`);
-const Database = require('./database');
-const Engagement = require('./models/engagement');
-const Target = require('./models/target');
-const Evidence = require('./models/evidence');
-const Finding = require('./models/finding');
+const Database = require('./db/database');
+const Engagement = require('./db/models/engagement');
+const Target = require('./db/models/target');
+const Evidence = require('./db/models/evidence');
+const Finding = require('./db/models/finding');
 const SessionStore = require('../store/session-store');
 const AuditLog = require('../audit/audit-log');
 
