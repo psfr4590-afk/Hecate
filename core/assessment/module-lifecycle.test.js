@@ -53,7 +53,7 @@ test('module execution events become durable core sessions and audit records', (
   assert.equal(completed.length, 1);
   assert.equal(completed[0].status, 'inactive');
 
-  const audit = AuditLog.list({ engagementId });
+  const audit = AuditLog.tail(100, engagementId);
   assert.ok(audit.some(row => row.action === 'recon:progress'));
   assert.ok(audit.some(row => row.action === 'recon:complete'));
   assert.equal(AuditLog.verify().valid, true);
