@@ -15,7 +15,7 @@ HECATE currently contains a working local platform with:
 - Persistent queues and restart/reconciliation behavior for the modules that use durable jobs.
 - Browser sessions with signed, HttpOnly, SameSite=Strict cookies and an eight-hour session lifetime.
 - Public recipient-facing Delivery tracking endpoints, kept separate from authenticated operator routes.
-- Regression coverage for core, API, WebSocket, browser-session, all seven module suites, UI capability-surface checks, and encoding checks.
+- Regression coverage for core, API, WebSocket, browser-session, all seven module suites, lifecycle projection, assessment reporting, UI capability-surface checks, and encoding checks.
 - A dashboard and dedicated module workspaces with active GUI control surfaces for all seven registered modules.
 
 The seven module workspaces now expose controls against their existing APIs. Recon and WebApp retain their target execution/cancellation controls; C2, Delivery, Evil Proxy, MITM, and Post-Exploit expose their implemented provisioning, queue, session, campaign, DNS, evidence, and analysis operations without adding new backend capabilities.
@@ -232,6 +232,17 @@ There are two intentional exceptions:
 
 - `POST /c2/beacon` is an implant-facing endpoint and uses the implant's cryptographic protocol instead of the operator token.
 - `/api/v1/delivery/track/*` is recipient-facing Delivery tracking and is intentionally public so an external recipient can trigger an open, click, or submission event.
+
+## Assessment reporting
+
+Engagement-scoped assessment reports are generated from durable core records without exposing credential records or raw evidence payloads. The JSON report provides an operator-ready inventory of targets, sessions, findings, evidence indexes, and audit status. A Markdown representation is available for professional report workflows.
+
+```text
+GET /api/v1/reports/engagement/:eid
+GET /api/v1/reports/engagement/:eid/markdown
+```
+
+Reports are projections of the current engagement state, not immutable legal records. Runtime evidence remains stored separately and is referenced by metadata/path rather than copied into the report output.
 
 ## API reference
 
