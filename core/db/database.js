@@ -207,8 +207,8 @@ function init(opts = {}) {
   }
 
   _db.prepare(`
-    INSERT OR IGNORE INTO engagement_operators (engagement_id, operator_id, role)
-    SELECT id, ?, 'owner' FROM engagements
+    INSERT OR IGNORE INTO engagement_operators (engagement_id, operator_id, role, created_at)
+    SELECT id, ?, 'owner', strftime('%Y-%m-%dT%H:%M:%fZ','now') FROM engagements
   `).run(defaultOperator);
 
   return _db;

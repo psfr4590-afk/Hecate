@@ -30,7 +30,12 @@ before(async () => {
 });
 
 after(() => {
+  try { require('./db/database').close(); } catch {}
+  try { require('./crypto/key-manager').clear(); } catch {}
   try { fs.unlinkSync(DB_PATH); } catch {}
+  for (const suffix of ['', '-wal', '-shm']) {
+    try { fs.unlinkSync(DB_PATH + suffix); } catch {}
+  }
   try { fs.unlinkSync(KEY_PATH); } catch {}
 });
 

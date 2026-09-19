@@ -19,6 +19,12 @@ after(() => {
 });
 
 test('legacy audit_log migration adds engagement_id and preserves existing rows', () => {
+  // This test owns its database file. Close any process-global singleton left by
+  // another test module before creating the legacy database fixture.
+  try { Database.close(); } catch {}
+  for (const suffix of ['', '-wal', '-shm']) {
+    try { fs.unlinkSync(DB_PATH + suffix); } catch {}
+  }
   const { DatabaseSync } = require('node:sqlite');
   const legacy = new DatabaseSync(DB_PATH);
   legacy.exec(`
