@@ -127,7 +127,7 @@ cmd
     initModule('delivery', () => delivery.init({ db, eventBus, dryRun: opts.dryRun ?? false }), delivery.routes);
     server.registerPublicRoute('/api/v1/delivery/track', delivery.trackingRoutes);
     initModule('mitm', () => mitm.init({ db, eventBus }), mitm.routes);
-    initModule('webapp', () => webapp.init({ db }), webapp.routes);
+    initModule('webapp', () => webapp.init({ db, eventBus }), webapp.routes);
     initModule('post-exploit', () => postExploit.init({ db, eventBus, ADGraph, taskQueue: require('../../modules/c2/implant/task-queue') }), postExploit.routes);
 
     // ── Start server ──────────────────────────────────────────────────────────
