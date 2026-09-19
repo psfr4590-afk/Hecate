@@ -19,6 +19,7 @@ const findings    = require('./routes/findings');
 const graph       = require('./routes/graph');
 const audit       = require('./routes/audit');
 const reports     = require('./routes/reports');
+const assessment  = require('./routes/assessment');
 
 const credLimit = rateLimit.create({ windowMs: 60_000, max: 30, message: 'Credential rate limit exceeded.' });
 
@@ -34,6 +35,7 @@ router.use('/findings',     findings);
 router.use('/graph',        graph);
 router.use('/audit',        audit);
 router.use('/reports',      reports);
+router.use('/assessment',   assessment);
 
 // ── Module routes (mounted after module init in server.js) ────────────────────
 // Modules register themselves via router.registerModule()

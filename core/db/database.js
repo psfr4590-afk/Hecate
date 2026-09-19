@@ -78,6 +78,11 @@ const BASE_SCHEMA = `
     description    TEXT,
     recommendation TEXT,
     cvss           REAL,
+    status         TEXT NOT NULL DEFAULT 'open',
+    remediation_owner TEXT,
+    remediation_due_at TEXT,
+    resolution     TEXT,
+    updated_at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
     created_at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
     FOREIGN KEY (engagement_id) REFERENCES engagements(id) ON DELETE CASCADE
   );
@@ -172,6 +177,34 @@ const BASE_SCHEMA = `
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
   );
 
+  CREATE TABLE IF NOT EXISTS assessment_plans (
+    id            TEXT PRIMARY KEY,
+    engagement_id TEXT NOT NULL UNIQUE,
+    phases        TEXT NOT NULL,
+    options       TEXT NOT NULL,
+    created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+    updated_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+    FOREIGN KEY (engagement_id) REFERENCES engagements(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS finding_retests (
+    id            TEXT PRIMARY KEY,
+    engagement_id TEXT NOT NULL,
+    finding_id    TEXT NOT NULL,
+    status        TEXT NOT NULL DEFAULT 'pending',
+    notes         TEXT,
+    evidence_id   TEXT,
+    created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+    completed_at  TEXT,
+    FOREIGN KEY (engagement_id) REFERENCES engagements(id) ON DELETE CASCADE,
+    FOREIGN KEY (finding_id) REFERENCES findings(id) ON DELETE CASCADE,
+    FOREIGN KEY (evidence_id) REFERENCES evidence(id) ON DELETE SET NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_assessment_plans_eid ON assessment_plans(engagement_id);
+  CREATE INDEX IF NOT EXISTS idx_finding_retests_eid ON finding_retests(engagement_id);
+  CREATE INDEX IF NOT EXISTS idx_finding_retests_finding ON finding_retests(finding_id);
+
   CREATE INDEX IF NOT EXISTS idx_targets_eid    ON targets(engagement_id);
   CREATE INDEX IF NOT EXISTS idx_evidence_eid   ON evidence(engagement_id);
   CREATE INDEX IF NOT EXISTS idx_findings_eid   ON findings(engagement_id);
@@ -205,6 +238,18 @@ function init(opts = {}) {
   if (!auditColumns.some(column => column.name === 'engagement_id')) {
     _db.exec('ALTER TABLE audit_log ADD COLUMN engagement_id TEXT');
   }
+
+  const ensureColumn = (table, column, definition) => {
+    const columns = _db.prepare(`PRAGMA table_info(${table})`).all();
+    if (!columns.some(row => row.name === column)) {
+      _db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+    }
+  };
+  ensureColumn('findings', 'status', "TEXT NOT NULL DEFAULT 'open'");
+  ensureColumn('findings', 'remediation_owner', 'TEXT');
+  ensureColumn('findings', 'remediation_due_at', 'TEXT');
+  ensureColumn('findings', 'resolution', 'TEXT');
+  ensureColumn('findings', 'updated_at', 'TEXT');
 
   _db.prepare(`
     INSERT OR IGNORE INTO engagement_operators (engagement_id, operator_id, role, created_at)
