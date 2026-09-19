@@ -1,16 +1,5 @@
 'use strict';
-const { randomUUID } = require('crypto');
-const db = () => require('../database').get();
-
-function findById(id) { return db().prepare('SELECT * FROM findings WHERE id=?').get(id) ?? null; }
-function findByIdForEngagement(id, engagementId) { return db().prepare('SELECT * FROM findings WHERE id=? AND engagement_id=?').get(id, engagementId) ?? null; }
-function findByEngagement(eid) { return db().prepare('SELECT * FROM findings WHERE engagement_id=? ORDER BY created_at DESC').all(eid); }
-function create({ engagementId, title, severity, module: mod, targetId, description, recommendation, cvss }) {
-  const id = randomUUID();
-  db().prepare('INSERT INTO findings (id,engagement_id,title,severity,module,target_id,description,recommendation,cvss) VALUES (?,?,?,?,?,?,?,?,?)')
-    .run(id, engagementId, title, severity, mod ?? null, targetId ?? null, description ?? null, recommendation ?? null, cvss ?? null);
-  return id;
-}
-function removeForEngagement(id, engagementId) { return db().prepare('DELETE FROM findings WHERE id=? AND engagement_id=?').run(id, engagementId); }
-function remove(id) { db().prepare('DELETE FROM findings WHERE id=?').run(id); }
-module.exports = { findById, findByIdForEngagement, findByEngagement, create, remove, removeForEngagement };
+const { randomUUID }=require('crypto'); const db=()=>require('../database').get(); const eventBus=require('../../events/event-bus');
+function findById(id){return db().prepare('SELECT * FROM findings WHERE id=?').get(id)??null;} function findByIdForEngagement(id,eid){return db().prepare('SELECT * FROM findings WHERE id=? AND engagement_id=?').get(id,eid)??null;} function findByEngagement(eid){return db().prepare('SELECT * FROM findings WHERE engagement_id=? ORDER BY created_at DESC').all(eid);}
+function create({engagementId,title,severity,module:mod,targetId,description,recommendation,cvss}){const id=randomUUID(); db().prepare('INSERT INTO findings (id,engagement_id,title,severity,module,target_id,description,recommendation,cvss) VALUES (?,?,?,?,?,?,?,?,?)').run(id,engagementId,title,severity,mod??null,targetId??null,description??null,recommendation??null,cvss??null); eventBus.emit('finding:created',{engagementId,subject:id,findingId:id,title,severity,module:mod,targetId,cvss}); return id;}
+function removeForEngagement(id,eid){const r=db().prepare('DELETE FROM findings WHERE id=? AND engagement_id=?').run(id,eid); if(r.changes)eventBus.emit('finding:deleted',{engagementId:eid,subject:id,findingId:id}); return r;} function remove(id){const row=findById(id); return removeForEngagement(id,row?.engagement_id);} module.exports={findById,findByIdForEngagement,findByEngagement,create,remove,removeForEngagement};
