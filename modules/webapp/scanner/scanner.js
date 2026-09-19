@@ -17,6 +17,9 @@ const webappStore = require('../storage/webapp-store');
 const ssrfGuard  = require('../../recon/target/ssrf-guard');
 
 const activeScans = new Map();
+let _eventBus = null;
+function setEventBus(bus) { _eventBus = bus; }
+function _emit(event, data) { _eventBus?.emit(event, { ...data, ts: new Date().toISOString() }); }
 
 const DEFAULT_CONFIG = {
   concurrency:    5,
@@ -57,11 +60,13 @@ async function start(opts) {
   const cancel = { cancelled: false };
 
   webappStore.createScan({ id: scanId, engagementId, targetId, targetUrl, config });
+  _emit('webapp:scan_started', { engagementId, scanId, targetId });
   activeScans.set(scanId, { cancel, config, engagementId, done: null });
 
   // Run async — don't await
   const done = _runScan(scanId, targetUrl, config, cancel, engagementId).catch(err => {
     webappStore.failScan(scanId, err.message);
+    _emit('webapp:scan_failed', { engagementId, scanId, error: err.message });
   });
   activeScans.get(scanId).done = done;
 
@@ -73,6 +78,7 @@ function cancelScan(scanId) {
   if (!scan) return false;
   scan.cancel.cancelled = true;
   webappStore.cancelScan(scanId);
+  _emit('webapp:scan_cancelled', { engagementId: scan.engagementId, scanId });
   activeScans.delete(scanId);
   return true;
 }
@@ -135,6 +141,7 @@ async function _runScan(scanId, targetUrl, config, cancel, engagementId) {
 
   if (activeScans.has(scanId)) {
     webappStore.finishScan(scanId);
+    _emit('webapp:scan_complete', { engagementId, scanId });
     activeScans.delete(scanId);
   }
 }
@@ -165,11 +172,13 @@ async function _worker(scanId, queue, cancel, config, baseline, engagementId) {
                                 isFuzzHit: true, findings });
       for (const f of findings) {
         webappStore.saveFinding({ scanId, engagementId, url: req.url, ...f });
+        _emit('webapp:finding', { engagementId, scanId, finding: { ...f, url: req.url } });
       }
     } else if (findings.length) {
       webappStore.saveRequest({ scanId, req, status: res.status, isFuzzHit: false, findings });
       for (const f of findings) {
         webappStore.saveFinding({ scanId, engagementId, url: req.url, ...f });
+        _emit('webapp:finding', { engagementId, scanId, finding: { ...f, url: req.url } });
       }
     }
 
@@ -257,4 +266,4 @@ async function _fetch(url, config, extraHeaders = {}) {
 
 function _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-module.exports = { start, cancelScan, listActive, shutdown, DEFAULT_CONFIG };
+module.exports = { start, cancelScan, listActive, shutdown, setEventBus, DEFAULT_CONFIG };
