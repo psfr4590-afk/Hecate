@@ -480,7 +480,7 @@ npm run check:encoding
 npm run build:ui
 ```
 
-The regression workflow covers core startup/migration/authorization behavior, API lifecycle/authentication, browser sessions, WebSocket policy, all seven module suites, the UI capability surface, and encoding checks. GitHub Actions runs the regression workflow on pushes and pull requests targeting `main`.
+The regression workflow covers core startup/migration/authorization behavior, API lifecycle/authentication, browser sessions, WebSocket policy, all seven module suites, the UI capability surface, and encoding checks. Phase 1 foundation controls also have dedicated regression coverage for SQLite test isolation, event-to-audit projection, C2 wire-payload preservation, and MITM DNS runtime ownership. Run `npm run test:phase1` for that focused baseline. GitHub Actions runs the regression workflow on pushes and pull requests targeting `main`.
 
 The repository contains a separate Juice Shop end-to-end test command:
 
