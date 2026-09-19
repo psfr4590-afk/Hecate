@@ -12,7 +12,7 @@ const AuditLog = require('../../core/audit/audit-log');
 
 const NAMESPACES = [
   'recon', 'mitm', 'evil-proxy', 'wireless', 'c2', 'delivery',
-  'post-exploit', 'pivot', 'webapp', 'core', 'session', 'credential',
+  'post-exploit', 'pivot', 'webapp', 'core', 'engagement', 'target', 'session', 'evidence', 'finding', 'credential',
 ];
 
 const handlers = new Map();
