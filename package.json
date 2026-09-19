@@ -15,7 +15,7 @@
     "start": "node --experimental-sqlite cli/index.js start",
     "keygen": "node cli/index.js keygen",
     "check:encoding": "node scripts/check-encoding.js",
-    "test": "node --experimental-sqlite --test --test-concurrency=1 cli/start.test.js core/core.test.js core/database-migration.test.js core/authorization.test.js core/phase3.test.js core/assessment/module-lifecycle.test.js core/phase2-lifecycle.test.js core/assessment/assessment-plan.test.js core/network/traffic-profile.test.js api/api.test.js api/server-lifecycle.test.js api/browser-session.test.js api/websocket/ws-browser-session.test.js api/phase4.test.js api/authorization.test.js api/websocket/ws-policy.test.js api/websocket/event-bridge.test.js modules/recon/recon.test.js modules/evil-proxy/evil-proxy.test.js modules/c2/c2.test.js modules/c2/beacon/beacon-middleware.test.js modules/delivery/delivery.test.js modules/delivery/persistence.test.js modules/mitm/mitm.test.js modules/mitm/dns/dns-ownership.test.js modules/webapp/webapp.test.js modules/post-exploit/post-exploit.test.js && node scripts/check-ui-surface.js",
+    "test": "node --experimental-sqlite --test --test-concurrency=1 cli/start.test.js core/core.test.js core/database-migration.test.js core/authorization.test.js core/phase3.test.js core/assessment/module-lifecycle.test.js core/reporting/assessment-report.test.js core/phase2-lifecycle.test.js core/assessment/assessment-plan.test.js core/network/traffic-profile.test.js api/api.test.js api/server-lifecycle.test.js api/browser-session.test.js api/websocket/ws-browser-session.test.js api/phase4.test.js api/authorization.test.js api/websocket/ws-policy.test.js api/websocket/event-bridge.test.js modules/recon/recon.test.js modules/evil-proxy/evil-proxy.test.js modules/c2/c2.test.js modules/c2/beacon/beacon-middleware.test.js modules/delivery/delivery.test.js modules/delivery/persistence.test.js modules/mitm/mitm.test.js modules/mitm/dns/dns-ownership.test.js modules/webapp/webapp.test.js modules/post-exploit/post-exploit.test.js && node scripts/check-ui-surface.js",
     "test:core": "node --experimental-sqlite --test --test-concurrency=1 cli/start.test.js core/core.test.js core/database-migration.test.js core/authorization.test.js core/phase3.test.js core/assessment/assessment-plan.test.js core/network/traffic-profile.test.js",
     "test:api": "node --experimental-sqlite --test --test-concurrency=1 api/api.test.js api/server-lifecycle.test.js api/browser-session.test.js api/websocket/ws-browser-session.test.js",
     "test:modules": "node --experimental-sqlite --test --test-concurrency=1 modules/recon/recon.test.js modules/evil-proxy/evil-proxy.test.js modules/c2/c2.test.js modules/delivery/delivery.test.js modules/mitm/mitm.test.js modules/webapp/webapp.test.js modules/post-exploit/post-exploit.test.js",
@@ -31,7 +31,8 @@
     "test:e2e:juice-shop": "node scripts/e2e-juice-shop.js",
     "test:phase1": "node --experimental-sqlite --test --test-concurrency=1 core/core.test.js core/database-migration.test.js api/websocket/event-bridge.test.js modules/c2/beacon/beacon-middleware.test.js modules/mitm/dns/dns-ownership.test.js",
     "test:phase2": "node --experimental-sqlite --test --test-concurrency=1 core/phase2-lifecycle.test.js",
-    "test:phase3": "node --experimental-sqlite --test --test-concurrency=1 core/phase3.test.js core/assessment/module-lifecycle.test.js"
+    "test:phase3": "node --experimental-sqlite --test --test-concurrency=1 core/phase3.test.js core/assessment/module-lifecycle.test.js",
+    "test:phase4": "node --experimental-sqlite --test --test-concurrency=1 core/reporting/assessment-report.test.js api/phase4.test.js"
   },
   "dependencies": {
     "commander": "^12.1.0",
