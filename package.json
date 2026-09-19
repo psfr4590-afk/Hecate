@@ -28,7 +28,8 @@
     "test:post-exploit": "node --test --test-concurrency=1 modules/post-exploit/post-exploit.test.js",
     "build:ui": "vite build --config ui/vite.config.js",
     "dev:ui": "vite --config ui/vite.config.js",
-    "test:e2e:juice-shop": "node scripts/e2e-juice-shop.js"
+    "test:e2e:juice-shop": "node scripts/e2e-juice-shop.js",
+    "test:phase1": "node --experimental-sqlite --test --test-concurrency=1 core/core.test.js core/database-migration.test.js api/websocket/event-bridge.test.js modules/c2/beacon/beacon-middleware.test.js modules/mitm/dns/dns-ownership.test.js"
   },
   "dependencies": {
     "commander": "^12.1.0",
