@@ -9,6 +9,7 @@
 const eventBus = require('../../core/events/event-bus');
 const wsServer = require('./ws-server');
 const AuditLog = require('../../core/audit/audit-log');
+const moduleLifecycle = require('../../core/assessment/module-lifecycle');
 
 const NAMESPACES = [
   'recon', 'mitm', 'evil-proxy', 'wireless', 'c2', 'delivery',
@@ -33,6 +34,7 @@ function start() {
       const data = args.length === 1 ? args[0] : args;
       wsServer.broadcast(event, data);
       _audit(event, data);
+      moduleLifecycle.project(event, data);
     }
     return originalEmit(event, ...args);
   };
