@@ -233,6 +233,21 @@ There are two intentional exceptions:
 - `POST /c2/beacon` is an implant-facing endpoint and uses the implant's cryptographic protocol instead of the operator token.
 - `/api/v1/delivery/track/*` is recipient-facing Delivery tracking and is intentionally public so an external recipient can trigger an open, click, or submission event.
 
+## Assessment management
+
+Phase 5 adds persistent assessment planning and finding follow-through. Each engagement can store an assessment plan with explicit phases/options, findings now have a durable remediation lifecycle, and retest records can be attached to findings and completed with a documented result.
+
+```text
+GET  /api/v1/assessment/:eid/plan
+PUT  /api/v1/assessment/:eid/plan
+PATCH /api/v1/assessment/:eid/findings/:fid
+GET  /api/v1/assessment/:eid/findings/:fid/retests
+POST /api/v1/assessment/:eid/findings/:fid/retests
+PATCH /api/v1/assessment/:eid/findings/:fid/retests/:rid
+```
+
+Finding lifecycle states are `open`, `in-progress`, `resolved`, `accepted-risk`, `false-positive`, and `retest-pending`. Retest states are `pending`, `passed`, `failed`, and `inconclusive`. All assessment-management routes remain engagement-authorized.
+
 ## Assessment reporting
 
 Engagement-scoped assessment reports are generated from durable core records without exposing credential records or raw evidence payloads. The JSON report provides an operator-ready inventory of targets, sessions, findings, evidence indexes, and audit status. A Markdown representation is available for professional report workflows.
