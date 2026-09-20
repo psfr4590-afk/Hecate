@@ -26,36 +26,6 @@ The seven module workspaces now expose controls against their existing APIs. Rec
 - Node's `node:sqlite` support. HECATE is started with `--experimental-sqlite`.
 - No separate native build toolchain is required by the core application.
 
-## First-run setup
-
-Install dependencies from the repository lockfile:
-
-```bash
-npm ci
-```
-
-Generate the operator encryption key once:
-
-```bash
-node cli/index.js keygen --out ~/.hecate/operator.key
-```
-
-Start HECATE:
-
-```bash
-HECATE_API_TOKEN=<your-token> \
-HECATE_KEY_PATH=~/.hecate/operator.key \
-npm start
-```
-
-The default local listener is:
-
-```
-http://127.0.0.1:7331
-```
-
-The startup command validates the Node runtime, SQLite availability, startup options, database directory access, and, on POSIX systems, restrictive operator-key permissions before initializing the platform.
-
 ## Operator workflow
 
 The platform's actual data flow is centered on:
@@ -152,6 +122,10 @@ http://127.0.0.1:7331/
 ```
 
 The local browser session is created by the HECATE process, so the operator console does not require manually copying an API token into the browser.
+
+## Documentation
+
+The repository root contains only the primary project entry point and configuration. Historical engineering and remediation records are kept under `docs/history/` so development history remains available without cluttering the project root.
 
 ## Operator console
 
