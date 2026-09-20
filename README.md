@@ -1,24 +1,153 @@
 # HECATE
 
-Unified, local-first operator platform for authorized security assessments and red-team engagements. HECATE keeps assessment scope, execution, evidence, findings, sessions, and audit history in one local control plane.
+**Local-first security assessment and red-team operations platform for authorized engagements.**
 
-## Current status
+HECATE is a unified operator platform that brings **engagement scope, target inventory, reconnaissance, security testing, sessions, evidence, findings, reporting, and audit history** into one local control plane.
 
-HECATE currently contains a working local platform with:
+It is designed for authorized security work where assessment state needs to remain coherent from initial scope through evidence collection, finding follow-through, retesting, and reporting.
 
-- A SQLite-backed core using WAL mode, foreign keys, durable audit history, and encrypted sensitive material.
-- A local REST API and WebSocket event channel.
-- A React operator console served by the same local process.
-- A CLI for key generation and platform startup.
-- Seven registered capability modules: Recon, Evil Proxy, C2, Delivery, MITM, WebApp, and Post-Exploit.
-- Engagement-scoped authorization across the core assessment workflow and hardened module data paths.
-- Persistent queues and restart/reconciliation behavior for the modules that use durable jobs.
-- Browser sessions with signed, HttpOnly, SameSite=Strict cookies and an eight-hour session lifetime.
-- Public recipient-facing Delivery tracking endpoints, kept separate from authenticated operator routes.
-- Regression coverage for core, API, WebSocket, browser-session, all seven module suites, lifecycle projection, assessment reporting, UI capability-surface checks, and encoding checks.
-- A dashboard and dedicated module workspaces with active GUI control surfaces for all seven registered modules.
+> **Current position:** HECATE is a working single-operator, single-process local platform with a React operator console, REST/WebSocket API, persistent SQLite state, seven registered capability modules, engagement-scoped authorization, encrypted sensitive material, durable audit history, and regression coverage across the core platform, API, UI surface, and module suites.
 
-The seven module workspaces now expose controls against their existing APIs. Recon and WebApp retain their target execution/cancellation controls; C2, Delivery, Evil Proxy, MITM, and Post-Exploit expose their implemented provisioning, queue, session, campaign, DNS, evidence, and analysis operations without adding new backend capabilities.
+## What HECATE provides
+
+| Area | Implemented capability |
+|---|---|
+| **Assessment control plane** | Engagements, targets, sessions, evidence, findings, audit history, assessment plans, remediation lifecycle, and retests |
+| **Operator interface** | React dashboard and dedicated workspaces for all seven registered modules |
+| **API** | Local REST API plus authenticated WebSocket event channel |
+| **Reconnaissance** | Scoped crawling, page/asset discovery, forms, secret discovery, evidence, statistics, and cancellation |
+| **Web application assessment** | Target-scoped scanning, generated requests, findings, statistics, and cancellation |
+| **Adversary-in-the-middle** | Proxy/lure workflows, victim-session handling, interception sessions, DNS controls, traffic and credential records |
+| **Command and control** | Implant registration, cryptographic implant protocol, task queueing, beacon handling, and result collection |
+| **Delivery** | Campaign management, target ingestion, delivery state, SMTP profiles, and recipient tracking |
+| **Post-exploitation** | Hash ingestion, Kerberoast workflows, Active Directory attack-path analysis, and C2-backed dump/task workflows |
+| **Evidence & reporting** | Engagement-scoped evidence indexes, findings, audit verification, JSON reports, and Markdown reports |
+| **Persistence** | SQLite WAL mode, foreign keys, full synchronous durability, queues, and restart/reconciliation behavior |
+| **Security controls** | Engagement authorization, signed browser sessions, WebSocket policy, encrypted sensitive material, and audit-chain integrity |
+
+## Assessment lifecycle
+
+HECATE is organized around a continuous assessment record rather than isolated tools:
+
+```text
+Engagement / scope
+        ↓
+Target inventory
+        ↓
+Module execution
+        ↓
+Session / Job
+        ↓
+Evidence / Finding
+        ↓
+Remediation / Retest
+        ↓
+Assessment report + audit history
+```
+
+The shared core keeps the assessment lifecycle connected while the seven capability modules remain independently implemented.
+
+## Seven capability modules
+
+1. **Recon** — scoped web crawling, page and asset discovery, forms, secret discovery, evidence, and cancellable jobs.
+2. **Evil Proxy** — phishing lures, victim-session handling, phishlet-backed proxying, and session export.
+3. **C2** — implant registration, per-implant cryptographic authentication, task queueing, beacon handling, and result collection.
+4. **Delivery** — campaign management, target ingestion, delivery state control, SMTP profiles, and recipient tracking.
+5. **MITM** — interception sessions, DNS rule management, DNS service control, traffic records, and credential records.
+6. **WebApp** — target-scoped web application scanning, generated requests, findings, scan statistics, and cancellation.
+7. **Post-Exploit** — hash ingestion, Kerberoast workflows, AD attack-path analysis, and C2-backed dump/task workflows.
+
+These descriptions reflect implemented backend capabilities. They do not imply that every capability has an independent GUI workflow beyond the documented operator control surfaces.
+
+## Why the architecture is different
+
+HECATE is not seven unrelated security utilities placed behind one menu. The modules share the same assessment context and persistence model:
+
+```text
+                    ┌─────────────────────────┐
+                    │   HECATE Control Plane  │
+                    │ scope · auth · audit    │
+                    │ state · events · reports│
+                    └────────────┬────────────┘
+                                 │
+          ┌──────────┬───────────┼───────────┬──────────┐
+          ↓          ↓           ↓           ↓          ↓
+        Recon     WebApp       C2        Delivery     MITM
+          │          │           │           │          │
+          └──────────┴───────────┼───────────┴──────────┘
+                                 ↓
+                         Post-Exploit
+                                 │
+                                 ↓
+                    Evidence · Findings · Retest
+                                 │
+                                 ↓
+                         Audit / Reporting
+```
+
+This shared model is what lets HECATE maintain engagement-scoped state and authorization across otherwise different assessment workflows.
+
+## Verification at a glance
+
+The repository contains regression coverage for:
+
+- Core startup, migration, authorization, assessment state, and network profiles
+- API lifecycle, authentication, browser sessions, and WebSocket policy
+- All seven module suites
+- Module lifecycle projection and engagement lineage
+- Evidence/finding/report generation
+- Audit-chain verification
+- UI capability-surface checks
+- Encoding checks
+- SQLite restart/recovery behavior
+- C2 wire-payload preservation
+- MITM DNS runtime ownership
+
+Run the full regression suite with:
+
+```bash
+npm test
+```
+
+The repository also provides focused core, API, module, phase, UI, and Juice Shop end-to-end test commands later in this document.
+
+## Security boundary
+
+HECATE is intentionally a **local, single-operator platform**, not a multi-user IAM product.
+
+Sensitive runtime data is kept outside source control. The application uses encrypted sensitive material, engagement-scoped authorization, signed browser sessions, WebSocket controls, durable audit history, and explicit runtime-data isolation.
+
+The project also documents its architectural limits rather than hiding them. For example, direct database administrators can bypass application-level append-only protections, MITM DNS runtime state is process-global, and the current C2 replay model is not presented as a separate monotonic sequence/nonce protocol.
+
+## Quick start
+
+Requirements are deliberately small: **Node.js 22+** with Node's `node:sqlite` support.
+
+```bash
+git clone https://github.com/psfr4590-afk/Hecate.git
+cd Hecate
+npm install
+npm start
+```
+
+Then open:
+
+```text
+http://127.0.0.1:7331/
+```
+
+A fresh install creates local operator state without placing keys or API credentials in the repository.
+
+## Project structure
+
+```text
+hecate/
+├── cli/             Entry point and startup/key-generation commands
+├── ui/              React operator console and Vite build
+├── api/             HTTP/WebSocket server, routes, middleware
+├── core/             DB, crypto, stores, graph, audit, events, assessment
+└── modules/          Recon, Evil Proxy, C2, Delivery, MITM, WebApp, Post-Exploit
+```
 
 ## Requirements
 
