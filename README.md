@@ -1,5 +1,7 @@
 # HECATE
 
+[![Regression](https://github.com/psfr4590-afk/Hecate/actions/workflows/regression.yml/badge.svg)](https://github.com/psfr4590-afk/Hecate/actions/workflows/regression.yml) [![Node.js 22+](https://img.shields.io/badge/node-22%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/) [![License](https://img.shields.io/badge/license-UNLICENSED-lightgrey)](https://github.com/psfr4590-afk/Hecate)
+
 **Local-first security assessment and red-team operations platform for authorized engagements.**
 
 HECATE is a unified operator platform that brings **engagement scope, target inventory, reconnaissance, security testing, sessions, evidence, findings, reporting, and audit history** into one local control plane.
@@ -148,6 +150,12 @@ hecate/
 ├── core/             DB, crypto, stores, graph, audit, events, assessment
 └── modules/          Recon, Evil Proxy, C2, Delivery, MITM, WebApp, Post-Exploit
 ```
+
+## Maintainer and security information
+
+- [Contributing guide](CONTRIBUTING.md) for development and pull requests.
+- [Security policy](SECURITY.md) for vulnerability reports and sensitive disclosures.
+- [Regression workflow](.github/workflows/regression.yml) for the automated verification path.
 
 ## Requirements
 
