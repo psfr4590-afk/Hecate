@@ -11,12 +11,12 @@ const crypto = require('crypto');
 const { operatorId } = require('../../core/auth/principal');
 
 const PUBLIC_ROUTES = new Set(['/health']);
-const EXPECTED_TOKEN = process.env.HECATE_API_TOKEN ?? '';
+function expectedToken() { return process.env.HECATE_API_TOKEN ?? ''; }
 const SESSION_COOKIE = 'hecate_session';
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 const SESSION_SECRET = crypto.randomBytes(32);
 
-if (!EXPECTED_TOKEN) {
+if (!expectedToken()) {
   process.stderr.write(JSON.stringify({
     ts: new Date().toISOString(),
     level: 'warn',
@@ -91,7 +91,7 @@ function auth(req, res, next) {
   if (authHeader?.startsWith('Bearer ')) token = authHeader.slice(7).trim();
   if (!token) token = req.headers['x-hecate-token'] ?? null;
 
-  if (token && safeEqual(token, EXPECTED_TOKEN)) {
+  if (token && safeEqual(token, expectedToken())) {
     authenticated = true;
   } else if (hasLocalSession(req)) {
     authenticated = true;
