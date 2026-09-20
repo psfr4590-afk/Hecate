@@ -8,6 +8,7 @@
 const path        = require('path');
 const fs          = require('fs');
 const { Command } = require('commander');
+const { ensureOperatorCredentials, markInitialized } = require('../../core/bootstrap/first-run');
 
 const Database   = require('../../core/db/database');
 const KeyManager = require('../../core/crypto/key-manager');
@@ -79,9 +80,12 @@ cmd
       validated = validateStartOptions(opts);
     } catch (err) { fatal(err.message); }
     const { port, host, dbPath } = validated;
-    const keyPath = opts.key ?? process.env.HECATE_KEY_PATH;
+    let bootstrap;
+    try {
+      bootstrap = ensureOperatorCredentials({ keyPath: opts.key ?? process.env.HECATE_KEY_PATH });
+    } catch (err) { fatal(`First-run initialization failed: ${err.message}`); }
+    const keyPath = bootstrap.keyPath;
 
-    if (!keyPath)              fatal('No key path. Set HECATE_KEY_PATH or pass --key <path>');
     if (!fs.existsSync(keyPath)) fatal(`Key file not found: ${keyPath}`);
     if (process.platform !== 'win32') {
       try {
@@ -136,6 +140,11 @@ cmd
       await server.start({ port, host, c2BeaconMiddleware });
     } catch (err) { fatal(`Server start failed: ${err.message}`); }
 
+    if (bootstrap.firstRun) {
+      markInitialized(bootstrap.stateDir);
+      log('info', 'First-run initialization complete', { stateDir: bootstrap.stateDir });
+      log('info', `Operator API token stored at ${bootstrap.tokenPath}`);
+    }
     log('info', `HECATE ready — http://${host}:${port}`);
     log('info', `API base — http://${host}:${port}/api/v1/`);
 

@@ -132,6 +132,27 @@ Real engagement data stays outside the Git repository. Runtime databases, WAL/SH
 
 Use synthetic fixtures for repository tests. Never commit real target credentials, tokens, session material, wallet seeds/private keys, captured evidence, or client runtime databases.
 
+## First run
+
+A fresh clone no longer requires a separate key-generation or environment-configuration step.
+
+```bash
+git clone https://github.com/psfr4590-afk/Hecate.git
+cd Hecate
+npm install
+npm start
+```
+
+`npm install` builds the production React console automatically. On the first `npm start`, HECATE creates its local operator state under the user's home directory, including the 32-byte encryption key and API token, without writing secrets into the repository. Existing `HECATE_KEY_PATH` or `HECATE_API_TOKEN` values are respected and are never overwritten.
+
+Once startup reports that HECATE is ready, open:
+
+```text
+http://127.0.0.1:7331/
+```
+
+The local browser session is created by the HECATE process, so the operator console does not require manually copying an API token into the browser.
+
 ## Operator console
 
 The React operator console is built and served by the same local HECATE process.
@@ -174,8 +195,8 @@ The Vite development server listens on `127.0.0.1:4173` and proxies API requests
 
 | Variable | Required | Description |
 |---|---|---|
-| `HECATE_API_TOKEN` | Yes | Operator API token |
-| `HECATE_KEY_PATH` | Yes | Path to the 32-byte AES-256 operator key |
+| `HECATE_API_TOKEN` | No | Optional operator API token; first run generates and stores one locally |
+| `HECATE_KEY_PATH` | No | Optional path to the 32-byte AES-256 operator key; first run creates one locally |
 | `HECATE_PORT` | No | API port, default `7331` |
 | `HECATE_HOST` | No | Bind address, default `127.0.0.1` |
 | `HECATE_PHISHLET_DIR` | No | Directory for custom phishlet JSON files |
