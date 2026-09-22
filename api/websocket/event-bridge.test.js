@@ -44,3 +44,32 @@ test('security event is projected into the audit chain without sensitive payload
   assert.ok(row.detail.includes('completed'));
   assert.equal(require('../../core/audit/audit-log').verify().valid, true);
 });
+
+
+test('audit append failure is fail-closed and does not broadcast or project the event', () => {
+  const AuditLog = require('../../core/audit/audit-log');
+  const wsServer = require('./ws-server');
+  const lifecycle = require('../../core/assessment/module-lifecycle');
+  const originalAppend = AuditLog.append;
+  const originalBroadcast = wsServer.broadcast;
+  const originalProject = lifecycle.project;
+  let broadcasts = 0;
+  let projections = 0;
+
+  AuditLog.append = () => { throw new Error('synthetic audit failure'); };
+  wsServer.broadcast = () => { broadcasts += 1; };
+  lifecycle.project = () => { projections += 1; };
+
+  try {
+    assert.throws(
+      () => eventBus.emit('delivery:audit_required_test', { engagementId: 'eng-audit', id: 'target-2' }),
+      /Mandatory audit append failed/
+    );
+    assert.equal(broadcasts, 0);
+    assert.equal(projections, 0);
+  } finally {
+    AuditLog.append = originalAppend;
+    wsServer.broadcast = originalBroadcast;
+    lifecycle.project = originalProject;
+  }
+});
