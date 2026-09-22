@@ -82,8 +82,9 @@ async function main() {
     const response = await fetch(`${base}/api/v1/status`, {
       headers: { 'X-Hecate-Token': token },
     });
-    assert.equal(response.status, 200, `status endpoint failed: ${await response.text()}`);
-    const status = await response.json();
+    const responseBody = await response.text();
+    assert.equal(response.status, 200, `status endpoint failed: ${responseBody}`);
+    const status = JSON.parse(responseBody);
     assert.equal(status.platform, 'HECATE');
     assert.ok(Array.isArray(status.modules));
     assert.equal(status.modules.length, 7);
