@@ -30,11 +30,11 @@ async function retrieve(id) {
 }
 
 function remove(id) {
-  const row = db().prepare('SELECT id FROM credentials WHERE id=?').get(id);
+  const row = db().prepare('SELECT id,engagement_id FROM credentials WHERE id=?').get(id);
   if (!row) return false;
   require('../db/database').transaction(database => {
     database.prepare('DELETE FROM credentials WHERE id=?').run(id);
-    eventBus.emit('credential:deleted', { subject: id, credentialId: id });
+    eventBus.emit('credential:deleted', { engagementId: row.engagement_id, subject: id, credentialId: id });
   });
   return true;
 }
