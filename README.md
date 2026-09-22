@@ -227,7 +227,7 @@ HECATE is designed around a single local operator rather than a multi-user IAM m
 - C2 implants use their own per-implant AES-based protocol rather than the operator API token.
 - Sensitive stored material is encrypted using the operator key.
 - Engagement membership is enforced on protected module resources where engagement scope applies.
-- SQLite uses WAL mode, foreign keys, full synchronous durability, and append-only audit protections.
+- SQLite uses WAL mode, foreign keys, full synchronous durability, and append-only audit protections. Audit projection is mandatory: an event is not broadcast or projected onward unless its audit record has been appended successfully.
 - New audit entries include the relevant subject and engagement context in their hash-chain input.
 - Existing legacy audit entries remain verifiable using their original hash format.
 
