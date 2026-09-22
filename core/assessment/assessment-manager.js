@@ -9,7 +9,7 @@ function get(engagementId) {
   if (!row) return null;
   return { id: row.id, engagementId: row.engagement_id, phases: JSON.parse(row.phases), options: JSON.parse(row.options), createdAt: row.created_at, updatedAt: row.updated_at };
 }
-function save(engagementId, input = {}) {
+function save(engagementId, input = {}) { return require('../db/database').transaction(()=>{
   const plan = createAssessmentPlan({ ...input, id: input.id || randomUUID() });
   const now = new Date().toISOString();
   db().prepare(`INSERT INTO assessment_plans (id,engagement_id,phases,options,created_at,updated_at)
@@ -19,5 +19,5 @@ function save(engagementId, input = {}) {
   const result = get(engagementId);
   eventBus.emit('assessment:plan_updated', { engagementId, subject: engagementId, phases: result.phases });
   return result;
-}
+}); }
 module.exports = { PHASES, get, save };
