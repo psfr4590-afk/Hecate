@@ -9,11 +9,12 @@
 const eventBus = require('../../core/events/event-bus');
 const wsServer = require('./ws-server');
 const AuditLog = require('../../core/audit/audit-log');
+const Database = require('../../core/db/database');
 const moduleLifecycle = require('../../core/assessment/module-lifecycle');
 
 const NAMESPACES = [
   'recon', 'mitm', 'evil-proxy', 'wireless', 'c2', 'delivery',
-  'post-exploit', 'pivot', 'webapp', 'core', 'engagement', 'target', 'session', 'evidence', 'finding', 'credential',
+  'post-exploit', 'pivot', 'webapp', 'core', 'engagement', 'target', 'session', 'evidence', 'finding', 'credential', 'assessment',
 ];
 
 const handlers = new Map();
@@ -32,29 +33,34 @@ function start() {
     const ns = typeof event === 'string' ? event.split(':')[0] : '';
     if (NAMESPACES.includes(ns)) {
       const data = args.length === 1 ? args[0] : args;
-      wsServer.broadcast(event, data);
+      // Audit is a mandatory durability boundary. The audit row is written
+      // before any externally visible projection. When a state mutation is
+      // inside Database.transaction(), the projections are deferred until the
+      // transaction commits so business state and its audit record are atomic.
       _audit(event, data);
-      moduleLifecycle.project(event, data);
+      if (Database.inTransaction()) {
+        Database.afterCommit(() => {
+          wsServer.broadcast(event, data);
+          moduleLifecycle.project(event, data);
+        });
+      } else {
+        wsServer.broadcast(event, data);
+        moduleLifecycle.project(event, data);
+      }
     }
     return originalEmit(event, ...args);
   };
 }
 
 function _audit(event, data) {
+  const clean = _sanitize(data);
+  const engagementId = clean?.engagementId ?? clean?.engagement_id ?? null;
+  const subject = clean?.id ?? clean?.campaignId ?? clean?.targetId ??
+    clean?.implantId ?? clean?.sessionId ?? clean?.findingId ?? null;
   try {
-    const clean = _sanitize(data);
-    const engagementId = clean?.engagementId ?? clean?.engagement_id ?? null;
-    const subject = clean?.id ?? clean?.campaignId ?? clean?.targetId ??
-      clean?.implantId ?? clean?.sessionId ?? null;
     AuditLog.append(event, subject, JSON.stringify(clean), engagementId);
   } catch (err) {
-    process.stderr.write(JSON.stringify({
-      ts: new Date().toISOString(),
-      level: 'error',
-      event: 'audit:append_failed',
-      message: err.message,
-      sourceEvent: event,
-    }) + '\n');
+    throw new Error('Mandatory audit append failed for ' + event + ': ' + err.message, { cause: err });
   }
 }
 

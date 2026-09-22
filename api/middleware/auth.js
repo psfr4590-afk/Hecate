@@ -77,6 +77,32 @@ function hasLocalSession(req) {
   return validSessionCookie(parseCookies(req.headers.cookie)[SESSION_COOKIE]);
 }
 
+function sessionExpiry(req) {
+  const value = parseCookies(req?.headers?.cookie)[SESSION_COOKIE];
+  if (typeof value !== 'string') return null;
+  const dot = value.lastIndexOf('.');
+  if (dot <= 0) return null;
+  const payload = value.slice(0, dot);
+  if (!safeEqual(value.slice(dot + 1), signSession(payload))) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    return typeof parsed?.exp === 'number' ? parsed.exp : null;
+  } catch {
+    return null;
+  }
+}
+
+function isLoopbackAddress(address) {
+  if (typeof address !== 'string') return false;
+  const normalized = address.replace(/^::ffff:/i, '');
+  return normalized === '::1' || normalized.startsWith('127.');
+}
+
+function isLoopbackRequest(req) {
+  return isLoopbackAddress(req?.socket?.remoteAddress) ||
+    isLoopbackAddress(req?.connection?.remoteAddress);
+}
+
 function sessionSetCookieHeader() {
   return `${SESSION_COOKIE}=${issueSessionCookie()}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}`;
 }
@@ -115,4 +141,7 @@ module.exports.issueSessionCookie = issueSessionCookie;
 module.exports.sessionSetCookieHeader = sessionSetCookieHeader;
 module.exports.hasLocalSession = hasLocalSession;
 module.exports.validSessionCookie = validSessionCookie;
+module.exports.sessionExpiry = sessionExpiry;
+module.exports.isLoopbackRequest = isLoopbackRequest;
+module.exports.isLoopbackAddress = isLoopbackAddress;
 module.exports.parseCookies = parseCookies;

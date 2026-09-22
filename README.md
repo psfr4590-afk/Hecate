@@ -111,7 +111,7 @@ Run the full regression suite with:
 npm test
 ```
 
-The repository also provides focused core, API, module, phase, UI, and Juice Shop end-to-end test commands later in this document.
+The repository also provides focused core, API, module, phase, UI, clean-start, and Juice Shop end-to-end test commands later in this document.
 
 ## Security boundary
 
@@ -222,12 +222,12 @@ Shared network profiles provide consistent assessment traffic behavior across ap
 HECATE is designed around a single local operator rather than a multi-user IAM model.
 
 - Operator API routes use the configured API token or the local signed browser session.
-- Browser sessions are process-scoped, HttpOnly, SameSite=Strict, signed, and expire after eight hours.
+- Browser sessions are process-scoped, HttpOnly, SameSite=Strict, signed, expire after eight hours, and are automatically minted only for loopback HTTP clients.
 - WebSocket connections apply origin, authentication, payload, heartbeat, and engagement-scope controls.
 - C2 implants use their own per-implant AES-based protocol rather than the operator API token.
 - Sensitive stored material is encrypted using the operator key.
 - Engagement membership is enforced on protected module resources where engagement scope applies.
-- SQLite uses WAL mode, foreign keys, full synchronous durability, and append-only audit protections.
+- SQLite uses WAL mode, foreign keys, full synchronous durability, and append-only audit protections. Audit projection is mandatory: an event is not broadcast or projected onward unless its audit record has been appended successfully.
 - New audit entries include the relevant subject and engagement context in their hash-chain input.
 - Existing legacy audit entries remain verifiable using their original hash format.
 
@@ -563,7 +563,7 @@ Current documented limits include:
 - C2 replay handling follows the existing encrypted protocol model rather than a separate monotonic sequence/nonce protocol.
 - Application-level append-only controls do not protect against an administrator with direct authority over the SQLite database.
 - MITM DNS spoofing state is process-global even though its API controls are engagement-authorized.
-- Existing browser WebSocket connections are not forcibly terminated solely because the browser session later reaches its TTL.
+- Browser-authenticated WebSocket connections are closed when their underlying eight-hour browser session expires.
 - The event bridge currently integrates the shared event bus through the existing singleton architecture.
 
 These are explicit design boundaries rather than claims of capabilities the software does not provide.

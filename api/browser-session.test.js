@@ -73,6 +73,18 @@ describe('Local browser session authentication', () => {
     assert.equal(r.status, 401);
   });
 
+  it('only treats loopback peers as eligible for automatic browser-session minting', () => {
+    assert.equal(auth.isLoopbackAddress('127.0.0.1'), true);
+    assert.equal(auth.isLoopbackAddress('127.42.0.9'), true);
+    assert.equal(auth.isLoopbackAddress('::1'), true);
+    assert.equal(auth.isLoopbackAddress('::ffff:127.0.0.1'), true);
+    assert.equal(auth.isLoopbackAddress('10.0.0.5'), false);
+    assert.equal(auth.isLoopbackAddress('192.168.1.20'), false);
+
+    assert.equal(auth.isLoopbackRequest({ socket: { remoteAddress: '127.0.0.1' } }), true);
+    assert.equal(auth.isLoopbackRequest({ socket: { remoteAddress: '203.0.113.10' } }), false);
+  });
+
   it('continues to accept programmatic bearer authentication', async () => {
     const r = await request('/protected', {
       Authorization: 'Bearer browser-session-test-token',
