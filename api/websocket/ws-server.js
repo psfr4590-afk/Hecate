@@ -67,7 +67,9 @@ function attach(httpServer, opts = {}) {
     const operatorId = process.env.HECATE_OPERATOR_ID || 'local-operator';
     const id = nextId();
     const ip = req.socket.remoteAddress ?? 'unknown';
-    clients.set(ws, { id, ip, connectedAt: new Date().toISOString(), alive: true, operatorId });
+    const browserSession = hasBrowserSession(req);
+    const sessionExpiresAt = browserSession ? auth.sessionExpiry(req) : null;
+    clients.set(ws, { id, ip, connectedAt: new Date().toISOString(), alive: true, operatorId, browserSession, sessionExpiresAt });
 
     process.stdout.write(JSON.stringify({ ts: new Date().toISOString(), event: 'ws:connect', id, ip }) + '\n');
     _send(ws, { type: 'hecate:connected', id, ts: new Date().toISOString() });
@@ -90,7 +92,13 @@ function attach(httpServer, opts = {}) {
   });
 
   pingTimer = setInterval(() => {
+    const now = Date.now();
     for (const [ws, meta] of clients) {
+      if (meta.browserSession && (!meta.sessionExpiresAt || meta.sessionExpiresAt <= now)) {
+        ws.close(1008, 'Browser session expired');
+        clients.delete(ws);
+        continue;
+      }
       if (!meta.alive) { ws.terminate(); clients.delete(ws); continue; }
       meta.alive = false;
       ws.ping();
