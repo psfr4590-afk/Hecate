@@ -13,6 +13,8 @@ const fs   = require('fs');
 const { OPERATOR_ID } = require('../auth/principal');
 
 let _db = null;
+let _transactionDepth = 0;
+let _afterCommit = [];
 
 const BASE_SCHEMA = `
   PRAGMA journal_mode = WAL;
@@ -264,8 +266,43 @@ function get() {
   return _db;
 }
 
+function inTransaction() {
+  return _transactionDepth > 0;
+}
+
+function afterCommit(fn) {
+  if (typeof fn !== 'function') throw new TypeError('afterCommit callback must be a function');
+  if (_transactionDepth > 0) _afterCommit.push(fn);
+  else fn();
+}
+
+function transaction(fn) {
+  if (typeof fn !== 'function') throw new TypeError('transaction callback must be a function');
+  const database = get();
+  const outer = _transactionDepth > 0;
+  if (outer) return fn(database);
+
+  database.exec('BEGIN IMMEDIATE');
+  _transactionDepth = 1;
+  _afterCommit = [];
+  try {
+    const result = fn(database);
+    database.exec('COMMIT');
+    const callbacks = _afterCommit;
+    _afterCommit = [];
+    _transactionDepth = 0;
+    for (const callback of callbacks) callback();
+    return result;
+  } catch (err) {
+    try { database.exec('ROLLBACK'); } catch {}
+    _afterCommit = [];
+    _transactionDepth = 0;
+    throw err;
+  }
+}
+
 function close() {
   if (_db) { _db.close(); _db = null; }
 }
 
-module.exports = { init, get, close };
+module.exports = { init, get, close, inTransaction, afterCommit, transaction };
