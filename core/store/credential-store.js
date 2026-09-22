@@ -2,6 +2,7 @@
 const { randomUUID } = require('crypto');
 const db         = () => require('../db/database').get();
 const KeyManager = require('../crypto/key-manager');
+const eventBus = require('../events/event-bus');
 
 function list(engagementId) {
   const rows = engagementId
@@ -13,8 +14,11 @@ function list(engagementId) {
 async function store({ engagementId, type, username, secret, targetId, metadata }) {
   const id        = randomUUID();
   const secretEnc = await KeyManager.encrypt(secret);
-  db().prepare('INSERT INTO credentials (id,engagement_id,type,username,secret_enc,target_id,metadata) VALUES (?,?,?,?,?,?,?)')
-    .run(id, engagementId, type, username ?? null, secretEnc, targetId ?? null, metadata ? JSON.stringify(metadata) : null);
+  require('../db/database').transaction(database => {
+    database.prepare('INSERT INTO credentials (id,engagement_id,type,username,secret_enc,target_id,metadata) VALUES (?,?,?,?,?,?,?)')
+      .run(id, engagementId, type, username ?? null, secretEnc, targetId ?? null, metadata ? JSON.stringify(metadata) : null);
+    eventBus.emit('credential:created', { engagementId, subject: id, credentialId: id, type, username, targetId });
+  });
   return id;
 }
 
@@ -28,7 +32,10 @@ async function retrieve(id) {
 function remove(id) {
   const row = db().prepare('SELECT id FROM credentials WHERE id=?').get(id);
   if (!row) return false;
-  db().prepare('DELETE FROM credentials WHERE id=?').run(id);
+  require('../db/database').transaction(database => {
+    database.prepare('DELETE FROM credentials WHERE id=?').run(id);
+    eventBus.emit('credential:deleted', { subject: id, credentialId: id });
+  });
   return true;
 }
 
