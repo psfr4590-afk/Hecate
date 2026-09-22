@@ -32,8 +32,10 @@ function start() {
     const ns = typeof event === 'string' ? event.split(':')[0] : '';
     if (NAMESPACES.includes(ns)) {
       const data = args.length === 1 ? args[0] : args;
-      wsServer.broadcast(event, data);
+      // Audit is a mandatory durability boundary. Nothing leaves the bridge
+      // until the audit record has been appended successfully.
       _audit(event, data);
+      wsServer.broadcast(event, data);
       moduleLifecycle.project(event, data);
     }
     return originalEmit(event, ...args);
