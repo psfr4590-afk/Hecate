@@ -30,6 +30,7 @@
     "build:ui": "vite build --config ui/vite.config.js",
     "dev:ui": "vite --config ui/vite.config.js",
     "test:e2e:juice-shop": "node scripts/e2e-juice-shop.js",
+    "smoke:start": "node scripts/smoke-start.js",
     "test:phase1": "node --experimental-sqlite --test --test-concurrency=1 core/core.test.js core/database-migration.test.js api/websocket/event-bridge.test.js modules/c2/beacon/beacon-middleware.test.js modules/mitm/dns/dns-ownership.test.js",
     "test:phase2": "node --experimental-sqlite --test --test-concurrency=1 core/phase2-lifecycle.test.js",
     "test:phase3": "node --experimental-sqlite --test --test-concurrency=1 core/phase3.test.js core/assessment/module-lifecycle.test.js",
