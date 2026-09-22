@@ -64,7 +64,7 @@ app.use('/api/v1', auth, (req, res, next) => {
 const uiDist = path.resolve(__dirname, '..', 'ui', 'dist');
 const uiIndex = path.join(uiDist, 'index.html');
 app.use((req, res, next) => {
-  if (req.path === '/' && fs.existsSync(uiIndex)) {
+  if (req.path === '/' && fs.existsSync(uiIndex) && auth.isLoopbackRequest(req)) {
     res.setHeader('Set-Cookie', auth.sessionSetCookieHeader());
   }
   next();
