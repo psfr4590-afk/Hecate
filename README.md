@@ -1,6 +1,6 @@
 # HECATE
 
-[![Regression](https://github.com/psfr4590-afk/Hecate/actions/workflows/regression.yml/badge.svg)](https://github.com/psfr4590-afk/Hecate/actions/workflows/regression.yml) [![Node.js 22+](https://img.shields.io/badge/node-22%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/) [![License](https://img.shields.io/badge/license-UNLICENSED-lightgrey)](https://github.com/psfr4590-afk/Hecate)
+[![Regression](https://github.com/psfr4590-afk/Hecate/actions/workflows/regression.yml/badge.svg)](https://github.com/psfr4590-afk/Hecate/actions/workflows/regression.yml) [![Node.js 22.13.0+](https://img.shields.io/badge/node-22.13.0%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/) [![License](https://img.shields.io/badge/license-UNLICENSED-lightgrey)](https://github.com/psfr4590-afk/Hecate)
 
 **Local-first security assessment and red-team operations platform for authorized engagements.**
 
@@ -123,7 +123,7 @@ The project also documents its architectural limits rather than hiding them. For
 
 ## Quick start
 
-Requirements are deliberately small: **Node.js 22+** with Node's `node:sqlite` support.
+Requirements are deliberately small: **Node.js 22.13.0+** with Node's `node:sqlite` support.
 
 ```bash
 git clone https://github.com/psfr4590-afk/Hecate.git
@@ -159,7 +159,7 @@ hecate/
 
 ## Requirements
 
-- Node.js **22 or newer**
+- Node.js **22.13.0 or newer**
 - Node's `node:sqlite` support. HECATE is started with `--experimental-sqlite`.
 - No separate native build toolchain is required by the core application.
 
@@ -238,6 +238,10 @@ The system is not a multi-operator authorization platform. Direct database admin
 Real engagement data stays outside the Git repository. Runtime databases, WAL/SHM files, evidence, logs, coverage output, generated UI output, operator keys, environment files, certificates, and private keys are ignored.
 
 Use synthetic fixtures for repository tests. Never commit real target credentials, tokens, session material, wallet seeds/private keys, captured evidence, or client runtime databases.
+
+## Fresh-machine installation
+
+The complete clean-machine procedure is documented in [`docs/FRESH-INSTALL.md`](docs/FRESH-INSTALL.md). It covers prerequisites, first-run credential bootstrap, explicit credential deployment, verification, regression testing, shutdown, runtime-data isolation, and troubleshooting.
 
 ## First run
 
