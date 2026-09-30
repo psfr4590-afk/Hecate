@@ -8,7 +8,7 @@ const root = path.resolve(__dirname, '..');
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 const lock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json'), 'utf8'));
 
-assert.match(pkg.version, /^1\\.0\\.0-rc\\.\\d+$/, 'release candidate must use 1.0.0-rc.N versioning');
+assert.match(pkg.version, /^1\.0\.0-rc\.\d+$/, 'release candidate must use 1.0.0-rc.N versioning');
 assert.equal(lock.version, pkg.version, 'package-lock root version must match package.json');
 assert.equal(lock.packages[''].version, pkg.version, 'package-lock package root version must match package.json');
 assert.equal(pkg.engines.node, '>=22.13.0', 'supported Node floor must remain pinned');
