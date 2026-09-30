@@ -6,19 +6,40 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   regression:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 22.13.0
+          node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
-      - run: npm audit --omit=dev --audit-level=high
-      - run: npm run smoke:start
-      - run: npm test
-      - run: npm run check:encoding
-      - run: npm run build:ui
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify release invariants
+        run: npm run verify:release
+
+      - name: Dependency audit
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Clean-start smoke test
+        run: npm run smoke:start
+
+      - name: Full regression suite
+        run: npm test
+
+      - name: Encoding verification
+        run: npm run check:encoding
+
+      - name: Production UI build
+        run: npm run build:ui
