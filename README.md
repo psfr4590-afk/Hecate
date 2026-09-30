@@ -8,7 +8,7 @@ HECATE is a unified operator platform that brings **engagement scope, target inv
 
 It is designed for authorized security work where assessment state needs to remain coherent from initial scope through evidence collection, finding follow-through, retesting, and reporting.
 
-> **Current position:** HECATE is a working single-operator, single-process local platform with a React operator console, REST/WebSocket API, persistent SQLite state, seven registered capability modules, engagement-scoped authorization, encrypted sensitive material, durable audit history, and regression coverage across the core platform, API, UI surface, and module suites.
+> **Release candidate status:** HECATE is maintained as a single-operator, single-process local platform with a React operator console, REST/WebSocket API, persistent SQLite state, seven registered capability modules, engagement-scoped authorization, encrypted sensitive material, durable audit history, and regression coverage across the core platform, API, UI surface, and module suites. The current release line is **1.0.0-rc.1**. Deployment readiness is gated by reproducible clean installation, release-invariant verification, dependency auditing, clean-start smoke testing, the full regression suite, production UI build, and release-artifact validation.
 
 ## What HECATE provides
 
@@ -89,6 +89,21 @@ HECATE is not seven unrelated security utilities placed behind one menu. The mod
 
 This shared model is what lets HECATE maintain engagement-scoped state and authorization across otherwise different assessment workflows.
 
+## Release candidate / deployment gate
+
+The supported release gate is documented in `docs/RELEASE-CHECKLIST.md`. The complete CI gate is also available locally:
+
+    npm ci
+    npm run verify:release
+    npm audit --omit=dev --audit-level=high
+    npm run smoke:start
+    npm test
+    npm run check:encoding
+    npm run build:ui
+    npm pack --dry-run
+
+Release tags must match the package version exactly, for example `v1.0.0-rc.1`. The tag-driven release workflow reruns the full gate and produces a deployment package plus SHA-256 checksum.
+
 ## Verification at a glance
 
 The repository contains regression coverage for:
@@ -128,7 +143,7 @@ Requirements are deliberately small: **Node.js 22.13.0+** with Node's `node:sqli
 ```bash
 git clone https://github.com/psfr4590-afk/Hecate.git
 cd Hecate
-npm install
+npm ci
 npm start
 ```
 
@@ -156,6 +171,7 @@ hecate/
 - [Contributing guide](CONTRIBUTING.md) for development and pull requests.
 - [Security policy](SECURITY.md) for vulnerability reports and sensitive disclosures.
 - [Regression workflow](.github/workflows/regression.yml) for the automated verification path.
+- [Release candidate checklist](docs/RELEASE-CHECKLIST.md) for release and deployment gating.
 
 ## Requirements
 
