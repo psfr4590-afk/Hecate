@@ -1,6 +1,6 @@
 {
   "name": "hecate",
-  "version": "1.0.0",
+  "version": "1.0.0-rc.1",
   "description": "Unified operator-grade red team platform",
   "private": true,
   "license": "UNLICENSED",
@@ -35,7 +35,9 @@
     "test:phase2": "node --experimental-sqlite --test --test-concurrency=1 core/phase2-lifecycle.test.js",
     "test:phase3": "node --experimental-sqlite --test --test-concurrency=1 core/phase3.test.js core/assessment/module-lifecycle.test.js",
     "test:phase4": "node --experimental-sqlite --test --test-concurrency=1 core/reporting/assessment-report.test.js api/phase4.test.js",
-    "test:phase5": "node --experimental-sqlite --test --test-concurrency=1 core/phase5-assessment-management.test.js"
+    "test:phase5": "node --experimental-sqlite --test --test-concurrency=1 core/phase5-assessment-management.test.js",
+    "verify:release": "node scripts/verify-release.js",
+    "ci": "npm run verify:release && npm run smoke:start && npm test && npm run check:encoding && npm run build:ui"
   },
   "dependencies": {
     "commander": "^12.1.0",
